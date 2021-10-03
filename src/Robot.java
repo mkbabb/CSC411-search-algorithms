@@ -103,6 +103,8 @@ public class Robot {
 
         this.nodeTree = new HashMap<Node, Node>();
         this.pathStack = new Stack<Action>();
+
+        this.visited = new boolean[this.env.getRows()][this.env.getCols()];
     }
 
     public int getPosRow() { return posRow; }
@@ -113,6 +115,14 @@ public class Robot {
     public void decPosCol() { posCol--; }
 
     // BEGIN
+
+    public double manhattanDistance(Node n1, Node n2) {
+        return Math.abs(n1.x - n2.x) + Math.abs(n1.y - n2.y);
+    }
+
+    public double h(Node node) {
+        return this.manhattanDistance(node, this.targetNode);
+    }
 
     public Node findTargetNode() {
         for (int i = 0; i < env.getRows(); i++) {
@@ -126,19 +136,22 @@ public class Robot {
         return null;
     }
 
+    public double getCost(Node node) {
+        return this.env.getTileCost(node.x, node.y);
+    }
+
     public ArrayList<Node> getNeighbors(Node node) {
-        int baseRow = node.x;
-        int baseCol = node.y;
+        int row = node.x;
+        int col = node.y;
 
         final var neighbors = new ArrayList<Node>();
 
         for (int i = 0; i < 4; i++) {
-            final var row = baseRow + directions[0][i];
-            final var col = baseCol + directions[1][i];
+            final var x = row + directions[0][i];
+            final var y = col + directions[1][i];
 
-            if (this.env.validPos(row, col) && !this.visited[row][col]) {
-                final var neighbor = new Node(row, col);
-                neighbors.add(neighbor);
+            if (this.env.validPos(x, y) && !this.visited[x][y]) {
+                neighbors.add(new Node(x, y, Action.values()[i]));
             }
         }
 
@@ -146,7 +159,8 @@ public class Robot {
     }
 
     public boolean finished(Node node) {
-        return this.env.getTileStatus(node.x, node.y) == TileStatus.TARGET;
+        return this.done =
+                   this.env.getTileStatus(node.x, node.y) == TileStatus.TARGET;
     }
 
     public void createPath() {
@@ -157,8 +171,6 @@ public class Robot {
             node = this.nodeTree.get(node);
             this.pathStack.add(node.action);
         }
-
-        Collections.reverse(this.pathStack);
     }
 
     public void DFS() {
@@ -176,7 +188,58 @@ public class Robot {
 
             for (final var n : neighbors) {
                 S.push(n);
-                this.nodeTree.put(n, node.copy());
+
+                final var parent = new Node(node.x, node.y, n.action);
+                this.nodeTree.put(n, parent);
+
+                this.visited[n.x][n.y] = true;
+            }
+        }
+    }
+
+    public void AStar() {
+        final var fCost = new HashMap<Node, Double>();
+        final var gCost = new HashMap<Node, Double>();
+
+        final var open =
+            new PriorityQueue<Node>(Comparator.comparing(fCost::get));
+        final var closed = new HashSet<Node>();
+
+        fCost.put(this.startNode, h(this.targetNode));
+        gCost.put(this.startNode, 0.0);
+
+        open.add(this.startNode);
+
+        while (!open.isEmpty()) {
+            final var node = open.peek();
+
+            if (this.finished(node)) {
+                break;
+            }
+            open.remove();
+            closed.add(node);
+
+            final var neighbors = this.getNeighbors(node);
+            final var currentG = gCost.get(node);
+
+            for (final var n : neighbors) {
+                if (closed.contains(n)) {
+                    continue;
+                }
+
+                final var g = gCost.getOrDefault(n, Double.MAX_VALUE);
+                final var tentative =
+                    currentG + this.getCost(node) + manhattanDistance(node, n);
+
+                if (tentative < g) {
+                    gCost.put(n, tentative);
+                    fCost.put(n, tentative + h(n));
+
+                    final var parent = new Node(node.x, node.y, n.action);
+                    this.nodeTree.put(n, parent);
+
+                    open.add(n);
+                }
             }
         }
     }
@@ -195,15 +258,17 @@ public class Robot {
             this.AStar();
             break;
         case "RBFS":
-            this.RBFS();
+            // this.RBFS();
             break;
         case "HillClimbing":
-            this.HillClimbing();
+            // this.HillClimbing();
         default:
             break;
         }
 
-        this.createPath();
+        if (this.done) {
+            this.createPath();
+        }
     }
 
     /**
@@ -216,6 +281,10 @@ public class Robot {
         TileStatus status = env.getTileStatus(posRow, posCol);
 
         Action action = Action.DO_NOTHING;
+
+        if (this.pathStack.isEmpty()) {
+            return action;
+        }
 
         switch (searchAlgorithm) {
         case "DFS":
@@ -233,7 +302,6 @@ public class Robot {
         default:
             break;
         }
-
         return action;
     }
 }
