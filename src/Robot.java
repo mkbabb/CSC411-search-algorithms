@@ -1,14 +1,11 @@
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Stack;
 
@@ -72,7 +69,10 @@ public class Robot {
 
         @Override
         public boolean equals(Object o) {
-
+            if (o == null) {
+                return false;
+            }
+            
             Node node = (Node)o;
             return x == node.x && y == node.y;
         }
@@ -115,6 +115,14 @@ public class Robot {
     public void decPosCol() { posCol--; }
 
     // BEGIN
+    public void reset() {
+        for (int i = 0; i < this.env.getRows(); i++) {
+            for (int j = 0; j < this.env.getCols(); j++) {
+                this.visited[i][j] = false;
+            }
+        }
+        this.nodeTree.clear();
+    }
 
     public double manhattanDistance(Node n1, Node n2) {
         return Math.abs(n1.x - n2.x) + Math.abs(n1.y - n2.y);
@@ -152,6 +160,7 @@ public class Robot {
 
             if (this.env.validPos(x, y) && !this.visited[x][y]) {
                 neighbors.add(new Node(x, y, Action.values()[i]));
+                this.visited[x][y] = true;
             }
         }
 
@@ -186,13 +195,11 @@ public class Robot {
 
             final var neighbors = this.getNeighbors(node);
 
-            for (final var n : neighbors) {
-                S.push(n);
+            for (final var child : neighbors) {
+                S.push(child);
 
-                final var parent = new Node(node.x, node.y, n.action);
-                this.nodeTree.put(n, parent);
-
-                this.visited[n.x][n.y] = true;
+                final var parent = new Node(node.x, node.y, child.action);
+                this.nodeTree.put(child, parent);
             }
         }
     }
@@ -222,28 +229,92 @@ public class Robot {
             final var neighbors = this.getNeighbors(node);
             final var currentG = gCost.get(node);
 
-            for (final var n : neighbors) {
-                if (closed.contains(n)) {
+            for (final var child : neighbors) {
+                if (closed.contains(child)) {
                     continue;
                 }
 
-                final var g = gCost.getOrDefault(n, Double.MAX_VALUE);
-                final var tentative =
-                    currentG + this.getCost(node) + manhattanDistance(node, n);
+                final var g = gCost.getOrDefault(child, Double.MAX_VALUE);
+                final var tentativeG = currentG + this.getCost(node) +
+                                       manhattanDistance(node, child);
 
-                if (tentative < g) {
-                    gCost.put(n, tentative);
-                    fCost.put(n, tentative + h(n));
+                if (tentativeG < g) {
+                    final var f = tentativeG + h(child);
 
-                    final var parent = new Node(node.x, node.y, n.action);
-                    this.nodeTree.put(n, parent);
+                    gCost.put(child, tentativeG);
+                    fCost.put(child, f);
 
-                    open.add(n);
+                    final var parent = new Node(node.x, node.y, child.action);
+                    this.nodeTree.put(child, parent);
+
+                    if (!open.contains(child)) {
+                        open.add(child);
+                    }
                 }
             }
         }
     }
 
+    public void RBFS() {
+        final var fCost = new HashMap<Node, Double>();
+        final var PQ =
+            new PriorityQueue<Node>(Comparator.comparing(fCost::get));
+        fCost.put(this.startNode, h(this.startNode));
+
+        PQ.add(this.startNode);
+
+        RBFSImpl(PQ, fCost);
+    }
+
+    public void RBFSImpl(PriorityQueue<Node> PQ, HashMap<Node, Double> fCost) {
+        final var node = PQ.remove();
+
+        if (this.finished(node)) {
+            return;
+        }
+        final var neighbors = this.getNeighbors(node);
+
+        for (final var child : neighbors) {
+            final var f = h(child) + this.getCost(child);
+            fCost.put(child, f);
+
+            final var parent = new Node(node.x, node.y, child.action);
+            this.nodeTree.put(child, parent);
+
+            if (!PQ.contains(child)) {
+                PQ.add(child);
+            }
+        };
+
+        RBFSImpl(PQ, fCost);
+    }
+
+    public void HillClimbing() {
+        final var Q = new ArrayDeque<Node>();
+        var node = this.startNode;
+        Q.add(node);
+
+        final var random = new Random();
+
+        while (!this.finished(node)) {
+            node = Q.remove();
+            final var neighbors = this.getNeighbors(node);
+
+            if (neighbors.isEmpty()) {
+                node = this.startNode;
+                this.reset();
+                Q.clear();
+                Q.add(node);
+            } else {
+                final var child =
+                    neighbors.get(random.nextInt(neighbors.size()));
+                final var parent = new Node(node.x, node.y, child.action);
+                this.nodeTree.put(child, parent);
+
+                Q.add(child);
+            }
+        }
+    }
     // END
 
     public void printPath() {
@@ -299,13 +370,14 @@ public class Robot {
             this.AStar();
             break;
         case "RBFS":
-            // this.RBFS();
+            this.RBFS();
             break;
         case "HillClimbing":
-            // this.HillClimbing();
+            this.HillClimbing();
         default:
             break;
         }
+
         if (this.done) {
             this.createPath();
             this.printPath();

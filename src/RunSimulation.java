@@ -91,7 +91,7 @@ public class RunSimulation {
 		// int target_row = Integer.parseInt(args[3]);
 		// int target_col = Integer.parseInt(args[4]);
 
-        String searchAlgorithm = "AStar";
+        String searchAlgorithm = "HillClimbing";
         
         int start_row = 0;
         int start_col = 0;
