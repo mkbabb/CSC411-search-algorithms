@@ -33,7 +33,7 @@ public class Robot {
     private Node startNode, targetNode;
 
     private Map<Node, Node> nodeTree;
-    private Stack<Node> pathStack;
+    private Stack<Action> actionStack;
 
     private int[][] directions = {{0, 0, -1, 1}, {1, -1, 0, 0}};
 
@@ -86,7 +86,7 @@ public class Robot {
         this.targetNode = this.findTargetNode();
 
         this.nodeTree = new TreeMap<Node, Node>();
-        this.pathStack = new Stack<Node>();
+        this.actionStack = new Stack<Action>();
 
         this.visited = new boolean[this.env.getRows()][this.env.getCols()];
     }
@@ -112,7 +112,7 @@ public class Robot {
     public Node findTargetNode() {
         for (int i = 0; i < env.getRows(); i++) {
             for (int j = 0; j < env.getCols(); j++) {
-                final var status = env.getTileStatus(i, j);
+                final TileStatus status = env.getTileStatus(i, j);
                 if (status == TileStatus.TARGET) {
                     return new Node(i, j);
                 }
@@ -127,14 +127,14 @@ public class Robot {
         int row = node.x;
         int col = node.y;
 
-        final var adjNodes = new ArrayList<Node>();
+        final ArrayList<Node> adjNodes = new ArrayList<Node>();
 
         for (int i = 0; i < 4; i++) {
-            final var x = row + directions[0][i];
-            final var y = col + directions[1][i];
+            final int x = row + directions[0][i];
+            final int y = col + directions[1][i];
 
             if (env.validPos(x, y) && !visited[x][y]) {
-                final var child = new Node(x, y);
+                final Node child = new Node(x, y);
                 child.action = Action.values()[i];
                 adjNodes.add(child);
                 visited[x][y] = true;
@@ -149,15 +149,15 @@ public class Robot {
     }
 
     public void createPath() {
-        var node = targetNode;
-        pathStack.add(targetNode);
+        Node node = targetNode;
+        actionStack.add(targetNode.action);
 
         while (true) {
             if (node == null || node.equals(startNode)) {
                 break;
             } else {
                 node = nodeTree.get(node);
-                pathStack.add(node);
+                actionStack.add(node.action);
             }
         }
     }
@@ -167,17 +167,17 @@ public class Robot {
         S.add(startNode);
 
         while (!S.isEmpty()) {
-            final var node = S.pop();
+            final Node node = S.pop();
 
             if (finished(node)) {
                 break;
             }
 
-            final var adjNodes = getAdjNodes(node);
+            final ArrayList<Node> adjNodes = getAdjNodes(node);
 
-            for (final var child : adjNodes) {
+            for (final Node child : adjNodes) {
                 S.push(child);
-                final var parent = new Node(node.x, node.y);
+                final Node parent = new Node(node.x, node.y);
                 parent.action = child.action;
                 nodeTree.put(child, parent);
             }
@@ -185,12 +185,12 @@ public class Robot {
     }
 
     public void AStar() {
-        final var fCost = new TreeMap<Node, Double>();
-        final var gCost = new TreeMap<Node, Double>();
+        final TreeMap<Node, Double> fCost = new TreeMap<Node, Double>();
+        final TreeMap<Node, Double> gCost = new TreeMap<Node, Double>();
 
-        final var open =
+        final PriorityQueue<Node> open =
             new PriorityQueue<Node>(Comparator.comparing((x) -> fCost.get(x)));
-        final var closed = new TreeSet<Node>();
+        final TreeSet<Node> closed = new TreeSet<Node>();
 
         fCost.put(startNode, h(targetNode));
         gCost.put(startNode, 0.0);
@@ -198,7 +198,7 @@ public class Robot {
         open.add(startNode);
 
         while (!open.isEmpty()) {
-            final var node = open.remove();
+            final Node node = open.remove();
 
             if (finished(node)) {
                 break;
@@ -206,28 +206,28 @@ public class Robot {
 
             closed.add(node);
 
-            final var adjNodes = getAdjNodes(node);
-            var currentG = gCost.get(node);
+            final ArrayList<Node> adjNodes = getAdjNodes(node);
+            Double currentG = gCost.get(node);
             currentG = currentG == null ? Double.MAX_VALUE : currentG;
 
-            for (final var child : adjNodes) {
+            for (final Node child : adjNodes) {
                 if (closed.contains(child)) {
                     continue;
                 }
-                var g = gCost.get(child);
+                Double g = gCost.get(child);
                 g = g == null ? Double.MAX_VALUE : g;
-                final var d =
+                final int d =
                     Math.abs(node.x - child.x) + Math.abs(node.y - child.y);
 
-                final var tentativeG = currentG + getCost(node) + d;
+                final Double tentativeG = currentG + getCost(node) + d;
 
                 if (tentativeG < g) {
-                    final var f = tentativeG + h(child);
+                    final Double f = tentativeG + h(child);
 
                     gCost.put(child, tentativeG);
                     fCost.put(child, f);
 
-                    final var parent = new Node(node.x, node.y);
+                    final Node parent = new Node(node.x, node.y);
                     parent.action = child.action;
                     nodeTree.put(child, parent);
 
@@ -240,8 +240,8 @@ public class Robot {
     }
 
     public void RBFS() {
-        final var cost = new TreeMap<Node, Double>();
-        final var PQ =
+        final TreeMap<Node, Double> cost = new TreeMap<Node, Double>();
+        final PriorityQueue<Node> PQ =
             new PriorityQueue<Node>(Comparator.comparing((x) -> cost.get(x)));
         cost.put(startNode, h(startNode));
 
@@ -251,17 +251,17 @@ public class Robot {
     }
 
     public void RBFSImpl(PriorityQueue<Node> PQ, TreeMap<Node, Double> cost) {
-        final var node = PQ.remove();
+        final Node node = PQ.remove();
 
         if (finished(node)) {
             return;
         }
-        final var adjNodes = getAdjNodes(node);
+        final ArrayList<Node> adjNodes = getAdjNodes(node);
 
-        for (final var child : adjNodes) {
+        for (final Node child : adjNodes) {
             cost.put(child, h(child) + getCost(child));
 
-            final var parent = new Node(node.x, node.y);
+            final Node parent = new Node(node.x, node.y);
             parent.action = child.action;
             nodeTree.put(child, parent);
 
@@ -273,15 +273,15 @@ public class Robot {
     }
 
     public void HillClimbing() {
-        final var Q = new ArrayDeque<Node>();
-        var node = startNode;
+        final ArrayDeque<Node> Q = new ArrayDeque<Node>();
+        Node node = startNode;
         Q.add(node);
 
-        final var random = new Random();
+        final Random random = new Random();
 
         while (!finished(node)) {
             node = Q.remove();
-            final var adjNodes = getAdjNodes(node);
+            final ArrayList<Node> adjNodes = getAdjNodes(node);
 
             if (adjNodes.isEmpty()) {
                 node = startNode;
@@ -289,8 +289,8 @@ public class Robot {
                 Q.clear();
                 Q.add(node);
             } else {
-                final var child = adjNodes.get(random.nextInt(adjNodes.size()));
-                final var parent = new Node(node.x, node.y);
+                final Node child = adjNodes.get(random.nextInt(adjNodes.size()));
+                final Node parent = new Node(node.x, node.y);
                 parent.action = child.action;
                 nodeTree.put(child, parent);
 
@@ -299,47 +299,6 @@ public class Robot {
         }
     }
     // END
-
-    public void printPath() {
-        for (int i = 0; i < env.getRows(); i++) {
-            final var row = new StringBuilder();
-
-            for (int j = 0; j < env.getCols(); j++) {
-                if (j > 0) {
-                    row.append(" ");
-                }
-
-                final var node = new Node(i, j);
-
-                if (pathStack.contains(node)) {
-                    row.append("*");
-                } else {
-                    final var status = env.getTileStatus(i, j);
-
-                    switch (status) {
-                    case IMPASSABLE:
-                        row.append("x");
-                        break;
-                    case MOUNTAIN:
-                        row.append("m");
-                        break;
-                    case PLAIN:
-                        row.append(".");
-                        break;
-                    case PUDDLE:
-                        row.append("w");
-                        break;
-                    case TARGET:
-                        row.append("G");
-                        break;
-                    default:
-                        row.append(".");
-                    }
-                }
-            }
-            System.out.println(row);
-        }
-    }
 
     /**
      * Construct search tree before Robot start moving.
@@ -362,7 +321,6 @@ public class Robot {
         }
         if (done) {
             createPath();
-            printPath();
         }
     }
 
@@ -377,22 +335,22 @@ public class Robot {
 
         Action action = Action.DO_NOTHING;
 
-        if (pathStack.isEmpty()) {
+        if (actionStack.isEmpty()) {
             return action;
         }
 
         switch (searchAlgorithm) {
         case "DFS":
-            action = pathStack.pop().action;
+            action = actionStack.pop();
             break;
         case "AStar":
-            action = pathStack.pop().action;
+            action = actionStack.pop();
             break;
         case "RBFS":
-            action = pathStack.pop().action;
+            action = actionStack.pop();
             break;
         case "HillClimbing":
-            action = pathStack.pop().action;
+            action = actionStack.pop();
             break;
         default:
             break;
