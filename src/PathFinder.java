@@ -27,6 +27,9 @@ public class PathFinder
     public static int[] rowVector = {-1, 1, 0, 0, -1, -1, 1, 1};
     public static int[] colVector = {0, 0, 1, -1, -1, 1, -1, 1};
 
+    // public static int[] rowVector = {-1, 1, 0, 0};
+    // public static int[] colVector = {0, 0, 1, -1};
+
     public class Node implements Comparable<Node>
     {
         public int x, y;
@@ -151,6 +154,49 @@ public class PathFinder
         }
     }
 
+    public void printPath()
+    {
+        for (int i = 0; i < this.getRows(); i++) {
+            final var row = new StringBuilder();
+
+            for (int j = 0; j < this.getCols(); j++) {
+                if (j > 0) {
+                    row.append(" ");
+                }
+
+                final var node = new Node(i, j);
+
+                if (this.path.contains(node)) {
+                    row.append("*");
+                } else {
+                    final var status = this.env.getTileStatus(i, j);
+
+                    switch (status) {
+                        case IMPASSABLE:
+                            row.append("x");
+                            break;
+                        case MOUNTAIN:
+                            row.append("^");
+                            break;
+                        case PLAIN:
+                            row.append(".");
+                            break;
+                        case PUDDLE:
+                            row.append("w");
+                            break;
+                        case TARGET:
+                            row.append("G");
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            System.out.println(row);
+        }
+    }
+
     public void backtrack()
     {
         var node = this.endNode;
@@ -163,7 +209,8 @@ public class PathFinder
         }
 
         Collections.reverse(this.path);
-        System.out.println(this.path);
+
+        this.printPath();
     }
 
     public void BFS()
