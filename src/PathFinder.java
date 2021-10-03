@@ -176,7 +176,7 @@ public class PathFinder
                             row.append("x");
                             break;
                         case MOUNTAIN:
-                            row.append("^");
+                            row.append("m");
                             break;
                         case PLAIN:
                             row.append(".");
@@ -192,7 +192,6 @@ public class PathFinder
                     }
                 }
             }
-
             System.out.println(row);
         }
     }
