@@ -19,7 +19,7 @@ public class Robot
     private String searchAlgorithm;
     public int expanded = 0;
 
-    private Pathfind pathfind;
+    private PathFinder pathfind;
     /**
         Initializes a Robot on a specific tile in the environment.
     */
@@ -38,7 +38,7 @@ public class Robot
         this.posCol = posCol;
         this.searchAlgorithm = searchAlgorithm;
 
-        this.pathfind = new Pathfind(this.env, this.posRow, this.posCol);
+        this.pathfind = new PathFinder(this.env, this.posRow, this.posCol);
     }
     public int getPosRow()
     {

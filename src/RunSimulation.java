@@ -99,7 +99,7 @@ public class RunSimulation {
         int target_row = 9;
         int target_col = 9;
 
-        String env_id = null;
+        String env_id = "2";
 		
 		// String env_id = args[5];
 		
