@@ -18,6 +18,10 @@ public class Environment {
 	public Environment() { this(10,10); }
 	public Environment(String envID){
 		this();
+
+        if (envID == null) {
+            return;
+        }
 		
 		switch(envID){
 		case "1":
