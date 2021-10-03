@@ -56,7 +56,7 @@ public class VisualizeSimulation extends JFrame {
         int target_row = Integer.parseInt(args[3]);
         int target_col = Integer.parseInt(args[4]);
 
-        String env_id = "1";
+        String env_id = args[5];
 
         JFrame frame =
             new VisualizeSimulation(searchAlgorithm, start_row, start_col,
