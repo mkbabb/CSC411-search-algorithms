@@ -26,8 +26,9 @@ public class Robot {
     private int posCol;
     private String searchAlgorithm;
     public int expanded = 0;
+    public int energyCost = 0;
 
-    private boolean done;
+    public boolean done;
     private boolean[][] visited;
 
     private Node startNode, targetNode;
@@ -140,7 +141,7 @@ public class Robot {
                 visited[x][y] = true;
             }
         }
-        expanded += 1;
+        expanded += adjNodes.size();
         return adjNodes;
     }
 
@@ -156,6 +157,7 @@ public class Robot {
             if (node == null || node.equals(startNode)) {
                 break;
             } else {
+                energyCost += this.getCost(node);
                 node = nodeTree.get(node);
                 actionStack.add(node.action);
             }

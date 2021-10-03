@@ -43,7 +43,7 @@ public class RunSimulation {
             if (goalMet)
                 break;
         }
-        printPerformanceMeasure();
+        // printPerformanceMeasure();
     }
 
     public double getTimesteps() { return timesteps; }
@@ -85,18 +85,88 @@ public class RunSimulation {
     }
 
     public static void main(String[] args) {
-        String searchAlgorithm = args[0];
-        int start_row = Integer.parseInt(args[1]);
-        int start_col = Integer.parseInt(args[2]);
+        // String searchAlgorithm = args[0];
+        // int start_row = Integer.parseInt(args[1]);
+        // int start_col = Integer.parseInt(args[2]);
 
-        int target_row = Integer.parseInt(args[3]);
-        int target_col = Integer.parseInt(args[4]);
+        // int target_row = Integer.parseInt(args[3]);
+        // int target_col = Integer.parseInt(args[4]);
 
-        String env_id = args[5];
+        // String env_id = args[5];
 
-        RunSimulation sim =
-            new RunSimulation(searchAlgorithm, start_row, start_col, target_row,
-                              target_col, env_id);
-        sim.run();
+        // RunSimulation sim =
+        //     new RunSimulation(searchAlgorithm, start_row, start_col,
+        //     target_row,
+        //                       target_col, env_id);
+        // sim.run();
+        test();
+    }
+
+    public static void test() {
+        String[] searchAlgorithms = {"DFS", "AStar", "RBFS", "HillClimbing"};
+        int trials = 5;
+
+        String[] envs = {null, "1", "2"};
+
+        final var rows = 10;
+        final var cols = 10;
+        final var r = new Random();
+
+        int start_row = r.nextInt(rows);
+        int start_col = r.nextInt(cols);
+
+        int target_row = r.nextInt(rows);
+        int target_col = r.nextInt(cols);
+
+        for (final var searchAlgorithm : searchAlgorithms) {
+            System.out.println();
+            System.out.println("*********");
+            System.out.println(searchAlgorithm);
+
+            var avgTimeSteps = 0;
+            var avgExpanded = 0;
+            var avgEnergyCost = 0;
+            var allDone = true;
+
+            for (final var env : envs) {
+                System.out.println();
+                System.out.println(String.format("Environment: %s", env));
+                System.out.println();
+
+                for (int i = 0; i < trials; i++) {
+                    RunSimulation sim =
+                        new RunSimulation(searchAlgorithm, start_row, start_col,
+                                          target_row, target_col, env);
+                    sim.run();
+
+                    final var robot = sim.robots.get(0);
+
+                    final var timeSteps = sim.timesteps;
+                    final var expanded = robot.expanded;
+                    final var energyCost = robot.energyCost;
+                    final var done = robot.done;
+
+                    avgTimeSteps += timeSteps;
+                    avgExpanded += expanded;
+                    avgEnergyCost += energyCost;
+                    allDone &= done;
+                }
+
+                avgTimeSteps /= trials;
+                avgExpanded /= trials;
+                avgEnergyCost /= trials;
+
+                System.out.println();
+
+                System.out.println(String.format("Average timeSteps: %s\n"
+                                                     + "Average expanded: %s\n"
+                                                     +
+                                                     "Average energy cost: %s\n"
+                                                     + "All done: %s",
+                                                 avgTimeSteps, avgExpanded,
+                                                 avgEnergyCost, allDone));
+                System.out.println("*********");
+            }
+        }
     }
 }
