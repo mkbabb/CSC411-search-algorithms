@@ -378,6 +378,9 @@ public class PathFinder
         }
     }
 
+    public void HillClimbing()
+    {}
+
     public ArrayList<Node> search(String searchAlgorithm)
     {
         switch (searchAlgorithm) {
@@ -394,6 +397,7 @@ public class PathFinder
                 this.RBFS();
                 break;
             case "HillClimbing":
+                this.HillClimbing();
                 break;
             default:
                 break;
