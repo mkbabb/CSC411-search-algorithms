@@ -15,7 +15,7 @@ public class Environment {
 	private int rows, cols;
 	private int targetRow, targetCol;
 	
-	public Environment() { this(10,10); }
+	public Environment() { this(20,20); }
 	public Environment(String envID){
 		this();
 

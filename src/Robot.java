@@ -38,41 +38,29 @@ public class Robot {
     public static int[][] directions = {{0, 0, -1, 1}, {1, -1, 0, 0}};
 
     public class Node implements Comparable<Node> {
-        public int x, y;
-        public Action action;
+        private int x, y;
+        public Action action = Action.DO_NOTHING;
 
         public Node(int x, int y) {
             this.x = x;
             this.y = y;
-            this.action = Action.DO_NOTHING;
         }
 
-        public Node(int x, int y, Action action) {
-            this(x, y);
-            this.action = action;
-        }
+        public int getX() { return this.x; }
+
+        public int getY() { return this.y; }
 
         public int compareTo(Node other) {
-            final var xCompare = Integer.compare(x, other.x);
-            final var yCompare = Integer.compare(y, other.y);
-
-            if (xCompare != 0) {
-                return xCompare;
-            } else if (yCompare != 0) {
-                return yCompare;
-            }
-
-            return 0;
+            return Comparator.comparing(Node::getX)
+                .thenComparing(Node::getY)
+                .compare(this, other);
         }
-
-        public Node copy() { return new Node(this.x, this.y, this.action); }
 
         @Override
         public boolean equals(Object o) {
             if (o == null) {
                 return false;
             }
-            
             Node node = (Node)o;
             return x == node.x && y == node.y;
         }
@@ -80,10 +68,6 @@ public class Robot {
         @Override
         public int hashCode() {
             return Objects.hash(x, y);
-        }
-
-        public String toString() {
-            return String.format("(%s, %s); %s", this.x, this.y, this.action);
         }
     }
 
@@ -116,12 +100,8 @@ public class Robot {
 
     // BEGIN
     public void reset() {
-        for (int i = 0; i < this.env.getRows(); i++) {
-            for (int j = 0; j < this.env.getCols(); j++) {
-                this.visited[i][j] = false;
-            }
-        }
         this.nodeTree.clear();
+        this.visited = new boolean[this.env.getRows()][this.env.getCols()];
     }
 
     public double manhattanDistance(Node n1, Node n2) {
@@ -148,23 +128,25 @@ public class Robot {
         return this.env.getTileCost(node.x, node.y);
     }
 
-    public ArrayList<Node> getNeighbors(Node node) {
+    public ArrayList<Node> getAdjNodes(Node node) {
         int row = node.x;
         int col = node.y;
 
-        final var neighbors = new ArrayList<Node>();
+        final var adjNodes = new ArrayList<Node>();
 
         for (int i = 0; i < 4; i++) {
             final var x = row + directions[0][i];
             final var y = col + directions[1][i];
 
             if (this.env.validPos(x, y) && !this.visited[x][y]) {
-                neighbors.add(new Node(x, y, Action.values()[i]));
+                final var child = new Node(x, y);
+                child.action = Action.values()[i];
+                adjNodes.add(child);
                 this.visited[x][y] = true;
             }
         }
-
-        return neighbors;
+        this.expanded += 1;
+        return adjNodes;
     }
 
     public boolean finished(Node node) {
@@ -176,9 +158,13 @@ public class Robot {
         var node = this.targetNode;
         this.pathStack.add(this.targetNode);
 
-        while (node != null && !node.equals(this.startNode)) {
-            node = this.nodeTree.get(node);
-            this.pathStack.add(node);
+        while (true) {
+            if (node == null || node.equals(this.startNode)) {
+                break;
+            } else {
+                node = this.nodeTree.get(node);
+                this.pathStack.add(node);
+            }
         }
     }
 
@@ -193,12 +179,12 @@ public class Robot {
                 break;
             }
 
-            final var neighbors = this.getNeighbors(node);
+            final var adjNodes = this.getAdjNodes(node);
 
-            for (final var child : neighbors) {
+            for (final var child : adjNodes) {
                 S.push(child);
-
-                final var parent = new Node(node.x, node.y, child.action);
+                final var parent = new Node(node.x, node.y);
+                parent.action = child.action;
                 this.nodeTree.put(child, parent);
             }
         }
@@ -218,25 +204,28 @@ public class Robot {
         open.add(this.startNode);
 
         while (!open.isEmpty()) {
-            final var node = open.peek();
+            final var node = open.remove();
 
             if (this.finished(node)) {
                 break;
             }
-            open.remove();
+
             closed.add(node);
 
-            final var neighbors = this.getNeighbors(node);
-            final var currentG = gCost.get(node);
+            final var adjNodes = this.getAdjNodes(node);
+            var currentG = gCost.get(node);
+            currentG = currentG == null ? Double.MAX_VALUE : currentG;
 
-            for (final var child : neighbors) {
+            for (final var child : adjNodes) {
                 if (closed.contains(child)) {
                     continue;
                 }
+                var g = gCost.get(child);
+                g = g == null ? Double.MAX_VALUE : g;
+                final var d =
+                    Math.abs(node.x - child.x) + Math.abs(node.y - child.y);
 
-                final var g = gCost.getOrDefault(child, Double.MAX_VALUE);
-                final var tentativeG = currentG + this.getCost(node) +
-                                       manhattanDistance(node, child);
+                final var tentativeG = currentG + this.getCost(node) + d;
 
                 if (tentativeG < g) {
                     final var f = tentativeG + h(child);
@@ -244,7 +233,8 @@ public class Robot {
                     gCost.put(child, tentativeG);
                     fCost.put(child, f);
 
-                    final var parent = new Node(node.x, node.y, child.action);
+                    final var parent = new Node(node.x, node.y);
+                    parent.action = child.action;
                     this.nodeTree.put(child, parent);
 
                     if (!open.contains(child)) {
@@ -272,13 +262,14 @@ public class Robot {
         if (this.finished(node)) {
             return;
         }
-        final var neighbors = this.getNeighbors(node);
+        final var adjNodes = this.getAdjNodes(node);
 
-        for (final var child : neighbors) {
+        for (final var child : adjNodes) {
             final var f = h(child) + this.getCost(child);
             fCost.put(child, f);
 
-            final var parent = new Node(node.x, node.y, child.action);
+            final var parent = new Node(node.x, node.y);
+            parent.action = child.action;
             this.nodeTree.put(child, parent);
 
             if (!PQ.contains(child)) {
@@ -298,17 +289,17 @@ public class Robot {
 
         while (!this.finished(node)) {
             node = Q.remove();
-            final var neighbors = this.getNeighbors(node);
+            final var adjNodes = this.getAdjNodes(node);
 
-            if (neighbors.isEmpty()) {
+            if (adjNodes.isEmpty()) {
                 node = this.startNode;
                 this.reset();
                 Q.clear();
                 Q.add(node);
             } else {
-                final var child =
-                    neighbors.get(random.nextInt(neighbors.size()));
-                final var parent = new Node(node.x, node.y, child.action);
+                final var child = adjNodes.get(random.nextInt(adjNodes.size()));
+                final var parent = new Node(node.x, node.y);
+                parent.action = child.action;
                 this.nodeTree.put(child, parent);
 
                 Q.add(child);
@@ -377,7 +368,6 @@ public class Robot {
         default:
             break;
         }
-
         if (this.done) {
             this.createPath();
             this.printPath();
