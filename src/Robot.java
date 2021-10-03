@@ -71,36 +71,7 @@ public class Robot
      */
     public void plan()
     {
-        switch (searchAlgorithm) {
-            case "BFS":
-                this.pathfinder.BFS();
-                break;
-            case "DFS":
-
-                /**
-                 * Implement your off line DFS search algorithm here.
-                 * For clarity, you should implement the algorithm in another
-                 * function/class and invoke it here.
-                 */
-                break;
-            case "AStar":
-                /**
-                 * Implement your off line A* search algorithm here.
-                 * For clarity, you should implement the algorithm in another
-                 * function/class and invoke it here.
-                 */
-                break;
-            case "RBFS":
-                /**
-                 * Implement your off line RBFS search algorithm here.
-                 * For clarity, you should implement the algorithm in another
-                 * function/class and invoke it here.
-                 */
-                break;
-            case "HillClimbing":
-            default:
-                break;
-        }
+        this.pathfinder.search(searchAlgorithm);
     }
 
     /**
@@ -114,38 +85,7 @@ public class Robot
         TileStatus status = env.getTileStatus(posRow, posCol);
         Action action = Action.DO_NOTHING;
 
-        switch (searchAlgorithm) {
-            case "BFS":
-                action = this.pathfinder.path.get(timeStep).action;
-                break;
-            case "DFS":
-                break;
-            case "AStar":
-                /**
-                 * Follow your constructed search tree in plan() to select
-                 * actions.
-                 */
-
-                break;
-            case "RBFS":
-                /**
-                 * Follow your constructed search tree in plan() to select
-                 * actions.
-                 */
-
-                break;
-            case "HillClimbing":
-                /**
-                 * Implement your online HillClimbing search algorithm here.
-                 * For clarity, you should implement the algorithm in another
-                 * function/class and invoke it here.
-                 */
-
-                break;
-            default:
-                break;
-        }
-
+        action = this.pathfinder.path.get(this.timeStep).action;
         this.timeStep += 1;
 
         return action;

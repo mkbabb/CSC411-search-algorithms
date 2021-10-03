@@ -57,7 +57,7 @@ public class VisualizeSimulation extends JFrame {
 		
 		// String env_id = "1";
 
-        String searchAlgorithm = "BFS";
+        String searchAlgorithm = "DFS";
         
         int start_row = 0;
         int start_col = 0;

@@ -91,7 +91,7 @@ public class RunSimulation {
 		// int target_row = Integer.parseInt(args[3]);
 		// int target_col = Integer.parseInt(args[4]);
 
-        String searchAlgorithm = "BFS";
+        String searchAlgorithm = "AStar";
         
         int start_row = 0;
         int start_col = 0;
@@ -99,7 +99,7 @@ public class RunSimulation {
         int target_row = 9;
         int target_col = 9;
 
-        String env_id = "1";
+        String env_id = "2";
 		
 		// String env_id = args[5];
 		

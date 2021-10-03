@@ -2,15 +2,17 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.Queue;
 
 public class PathFinder
 {
     public Environment env;
-    public ArrayList<Queue<Integer>> dimQueues;
 
     public int rowPos, colPos;
 
@@ -19,6 +21,7 @@ public class PathFinder
     public boolean[][] visitedTiles;
 
     public Node startNode, endNode;
+    public Map<Node, Node> nodes;
 
     public Map<Node, Node> pathMap;
     public ArrayList<Node> path;
@@ -34,6 +37,8 @@ public class PathFinder
     public class Node implements Comparable<Node>
     {
         public int x, y;
+        public double f, g, h;
+
         public Action action;
 
         public Node(int x, int y)
@@ -41,6 +46,10 @@ public class PathFinder
             this.x = x;
             this.y = y;
             this.action = Action.DO_NOTHING;
+
+            this.f = Double.MAX_VALUE;
+            this.g = Double.MAX_VALUE;
+            this.h = 0;
         }
 
         public Node(int x, int y, Action action)
@@ -49,18 +58,9 @@ public class PathFinder
             this.action = action;
         }
 
-        public int compareTo(Node other)
+        @Override public int compareTo(Node n)
         {
-            final var xCompare = Integer.compare(x, other.x);
-            final var yCompare = Integer.compare(y, other.y);
-
-            if (xCompare != 0) {
-                return xCompare;
-            } else if (yCompare != 0) {
-                return yCompare;
-            }
-
-            return 0;
+            return Double.compare(this.f, n.f);
         }
 
         @Override public boolean equals(Object o)
@@ -87,11 +87,6 @@ public class PathFinder
 
     public PathFinder(Environment env, int rowPos, int colPos)
     {
-        this.dimQueues = new ArrayList<Queue<Integer>>();
-
-        this.dimQueues.add(new ArrayDeque<Integer>());
-        this.dimQueues.add(new ArrayDeque<Integer>());
-
         this.reachedTarget = false;
 
         this.env = env;
@@ -99,7 +94,12 @@ public class PathFinder
         this.colPos = colPos;
 
         this.startNode = new Node(this.rowPos, this.colPos, null);
+        this.startNode.g = 0;
+        this.startNode.h = h(this.startNode);
+
         this.endNode = null;
+
+        this.nodes = new HashMap<Node, Node>();
 
         this.visitedTiles = new boolean[this.getRows()][this.getCols()];
 
@@ -113,6 +113,21 @@ public class PathFinder
         }
     }
 
+    public double euclideanDistance(Node n1, Node n2)
+    {
+        return Math.sqrt(Math.pow(n1.x - n2.x, 2) + Math.pow(n1.y - n2.y, 2));
+    }
+
+    public double manhattanDistance(Node n1, Node n2)
+    {
+        return Math.abs(n1.x - n2.x) + Math.abs(n1.y - n2.y);
+    }
+
+    public double h(Node node)
+    {
+        return 0;
+    }
+
     public int getRows()
     {
         return this.env.getRows();
@@ -121,16 +136,6 @@ public class PathFinder
     public int getCols()
     {
         return this.env.getCols();
-    }
-
-    public Queue<Integer> rowQueue()
-    {
-        return this.dimQueues.get(0);
-    }
-
-    public Queue<Integer> colQueue()
-    {
-        return this.dimQueues.get(1);
     }
 
     public boolean isValid(int row, int col)
@@ -194,10 +199,10 @@ public class PathFinder
         Collections.reverse(this.path);
     }
 
-    public ArrayList<Node> getNeighbors(int... positions)
+    public ArrayList<Node> getNeighbors(Node node)
     {
-        int baseRow = positions[0];
-        int baseCol = positions[1];
+        int baseRow = node.x;
+        int baseCol = node.y;
 
         final var neighbors = new ArrayList<Node>();
 
@@ -206,46 +211,154 @@ public class PathFinder
             final var col = baseCol + colVector[i];
 
             if (this.isValid(row, col)) {
-                final var child = new Node(row, col);
-                child.action = mapActionIx(i);
+                var child = new Node(row, col);
+                child = this.nodes.getOrDefault(child, child);
 
-                this.visitedTiles[row][col] = true;
+                final var action = mapActionIx(i);
+                child.action = action;
+
+                // this.visitedTiles[row][col] = true;
                 neighbors.add(child);
+
+                this.nodes.put(node, node);
             }
         }
 
         return neighbors;
     }
 
-    public void BFS()
+    public boolean finishSearch(Node node)
     {
-        this.rowQueue().add(this.rowPos);
-        this.colQueue().add(this.colPos);
+        if (this.env.getTileStatus(node.x, node.y) == TileStatus.TARGET) {
+            this.endNode = node;
+            this.reachedTarget = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-        while (!this.rowQueue().isEmpty()) {
-            final var row = this.rowQueue().remove();
-            final var col = this.colQueue().remove();
+    public void DFS()
+    {
+        final var rowStack = new ArrayDeque<Integer>();
+        final var colStack = new ArrayDeque<Integer>();
 
-            if (this.env.getTileStatus(row, col) == TileStatus.TARGET) {
-                this.endNode = new Node(row, col);
-                this.reachedTarget = true;
+        rowStack.add(this.rowPos);
+        colStack.add(this.colPos);
+
+        while (!rowStack.isEmpty()) {
+            final var row = rowStack.removeFirst();
+            final var col = colStack.removeFirst();
+            final var current = new Node(row, col);
+
+            if (this.finishSearch(current)) {
                 break;
             }
 
-            final var neighbors = this.getNeighbors(row, col);
+            final var neighbors = this.getNeighbors(current);
 
             neighbors.forEach((node) -> {
-                final var parent = new Node(row, col);
-                this.rowQueue().add(node.x);
-                this.colQueue().add(node.y);
+                rowStack.addFirst(node.x);
+                colStack.addFirst(node.y);
 
-                this.pathMap.put(node, parent);
-                parent.action = node.action;
+                pathMap.put(node, new Node(current.x, current.y, node.action));
             });
+        }
+    }
+
+    public void BFS()
+    {
+        final var rowQueue = new ArrayDeque<Integer>();
+        final var colQueue = new ArrayDeque<Integer>();
+
+        rowQueue.add(this.rowPos);
+        colQueue.add(this.colPos);
+
+        while (!rowQueue.isEmpty()) {
+            final var row = rowQueue.remove();
+            final var col = colQueue.remove();
+            final var current = new Node(row, col);
+
+            if (this.finishSearch(current)) {
+                break;
+            }
+
+            final var neighbors = this.getNeighbors(current);
+
+            neighbors.forEach((node) -> {
+                rowQueue.add(node.x);
+                colQueue.add(node.y);
+
+                pathMap.put(node, new Node(current.x, current.y, node.action));
+            });
+        }
+    }
+
+    public void AStar()
+    {
+        final var openSet = new PriorityQueue<Node>();
+        final var closedSet = new HashSet<Node>();
+
+        openSet.add(this.startNode);
+
+        while (!openSet.isEmpty()) {
+            final var current = openSet.remove();
+            closedSet.add(current);
+
+            if (this.finishSearch(current)) {
+                break;
+            }
+
+            final var neighbors = this.getNeighbors(current);
+
+            neighbors.stream()
+                .filter((node) -> !closedSet.contains(node))
+                .forEach((node) -> {
+                    final var cost = this.env.getTileCost(node.x, node.y);
+                    final var g =
+                        current.g + manhattanDistance(current, node) + cost;
+
+                    if (g < node.g) {
+                        node.g = g;
+                        node.f = g + h(node);
+
+                        final var parent =
+                            new Node(current.x, current.y, node.action);
+                        pathMap.put(node, parent);
+
+                        if (!openSet.contains(node)) {
+                            openSet.add(node);
+                        }
+                    }
+                });
+        }
+    }
+
+    public ArrayList<Node> search(String searchAlgorithm)
+    {
+        switch (searchAlgorithm) {
+            case "BFS":
+                this.BFS();
+                break;
+            case "DFS":
+                this.DFS();
+            case "AStar":
+                this.AStar();
+                break;
+            case "RBFS":
+                break;
+            case "HillClimbing":
+                break;
+            default:
+                break;
         }
 
         if (this.reachedTarget) {
             this.getPath();
+            this.printPath();
+            return this.path;
+        } else {
+            return null;
         }
     }
 }
