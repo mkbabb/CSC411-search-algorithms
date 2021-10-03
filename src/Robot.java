@@ -1,13 +1,13 @@
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Stack;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
     Represents an intelligent agent moving through a particular room.
@@ -85,7 +85,7 @@ public class Robot {
         this.startNode = new Node(posRow, posCol);
         this.targetNode = this.findTargetNode();
 
-        this.nodeTree = new HashMap<Node, Node>();
+        this.nodeTree = new TreeMap<Node, Node>();
         this.pathStack = new Stack<Node>();
 
         this.visited = new boolean[this.env.getRows()][this.env.getCols()];
@@ -104,11 +104,10 @@ public class Robot {
         visited = new boolean[env.getRows()][env.getCols()];
     }
 
-    public double manhattanDistance(Node n1, Node n2) {
-        return Math.abs(n1.x - n2.x) + Math.abs(n1.y - n2.y);
+    public double h(Node node) {
+        return Math.abs(node.x - targetNode.x) +
+            Math.abs(node.y - targetNode.y);
     }
-
-    public double h(Node node) { return manhattanDistance(node, targetNode); }
 
     public Node findTargetNode() {
         for (int i = 0; i < env.getRows(); i++) {
@@ -186,12 +185,12 @@ public class Robot {
     }
 
     public void AStar() {
-        final var fCost = new HashMap<Node, Double>();
-        final var gCost = new HashMap<Node, Double>();
+        final var fCost = new TreeMap<Node, Double>();
+        final var gCost = new TreeMap<Node, Double>();
 
         final var open =
-            new PriorityQueue<Node>(Comparator.comparing(fCost::get));
-        final var closed = new HashSet<Node>();
+            new PriorityQueue<Node>(Comparator.comparing((x) -> fCost.get(x)));
+        final var closed = new TreeSet<Node>();
 
         fCost.put(startNode, h(targetNode));
         gCost.put(startNode, 0.0);
@@ -241,17 +240,17 @@ public class Robot {
     }
 
     public void RBFS() {
-        final var fCost = new HashMap<Node, Double>();
+        final var cost = new TreeMap<Node, Double>();
         final var PQ =
-            new PriorityQueue<Node>(Comparator.comparing(fCost::get));
-        fCost.put(startNode, h(startNode));
+            new PriorityQueue<Node>(Comparator.comparing((x) -> cost.get(x)));
+        cost.put(startNode, h(startNode));
 
         PQ.add(startNode);
 
-        RBFSImpl(PQ, fCost);
+        RBFSImpl(PQ, cost);
     }
 
-    public void RBFSImpl(PriorityQueue<Node> PQ, HashMap<Node, Double> fCost) {
+    public void RBFSImpl(PriorityQueue<Node> PQ, TreeMap<Node, Double> cost) {
         final var node = PQ.remove();
 
         if (finished(node)) {
@@ -260,8 +259,7 @@ public class Robot {
         final var adjNodes = getAdjNodes(node);
 
         for (final var child : adjNodes) {
-            final var f = h(child) + getCost(child);
-            fCost.put(child, f);
+            cost.put(child, h(child) + getCost(child));
 
             final var parent = new Node(node.x, node.y);
             parent.action = child.action;
@@ -271,7 +269,7 @@ public class Robot {
                 PQ.add(child);
             }
         };
-        RBFSImpl(PQ, fCost);
+        RBFSImpl(PQ, cost);
     }
 
     public void HillClimbing() {
