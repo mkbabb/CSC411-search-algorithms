@@ -36,7 +36,7 @@ public class Robot {
     public Node startNode, targetNode;
 
     public Map<Node, Node> nodeTree;
-    public Stack<Action> pathStack;
+    public Stack<Node> pathStack;
 
     public static int[][] directions = {{0, 0, -1, 1}, {1, -1, 0, 0}};
 
@@ -102,7 +102,7 @@ public class Robot {
         this.targetNode = this.findTargetNode();
 
         this.nodeTree = new HashMap<Node, Node>();
-        this.pathStack = new Stack<Action>();
+        this.pathStack = new Stack<Node>();
 
         this.visited = new boolean[this.env.getRows()][this.env.getCols()];
     }
@@ -165,11 +165,11 @@ public class Robot {
 
     public void createPath() {
         var node = this.targetNode;
-        this.pathStack.add(this.targetNode.action);
+        this.pathStack.add(this.targetNode);
 
         while (node != null && !node.equals(this.startNode)) {
             node = this.nodeTree.get(node);
-            this.pathStack.add(node.action);
+            this.pathStack.add(node);
         }
     }
 
@@ -246,6 +246,47 @@ public class Robot {
 
     // END
 
+    public void printPath() {
+        for (int i = 0; i < this.env.getRows(); i++) {
+            final var row = new StringBuilder();
+
+            for (int j = 0; j < this.env.getCols(); j++) {
+                if (j > 0) {
+                    row.append(" ");
+                }
+
+                final var node = new Node(i, j);
+
+                if (this.pathStack.contains(node)) {
+                    row.append("*");
+                } else {
+                    final var status = this.env.getTileStatus(i, j);
+
+                    switch (status) {
+                    case IMPASSABLE:
+                        row.append("x");
+                        break;
+                    case MOUNTAIN:
+                        row.append("m");
+                        break;
+                    case PLAIN:
+                        row.append(".");
+                        break;
+                    case PUDDLE:
+                        row.append("w");
+                        break;
+                    case TARGET:
+                        row.append("G");
+                        break;
+                    default:
+                        row.append(".");
+                    }
+                }
+            }
+            System.out.println(row);
+        }
+    }
+
     /**
      * Construct search tree before Robot start moving.
      */
@@ -265,9 +306,9 @@ public class Robot {
         default:
             break;
         }
-
         if (this.done) {
             this.createPath();
+            this.printPath();
         }
     }
 
@@ -288,16 +329,16 @@ public class Robot {
 
         switch (searchAlgorithm) {
         case "DFS":
-            action = this.pathStack.pop();
+            action = this.pathStack.pop().action;
             break;
         case "AStar":
-            action = this.pathStack.pop();
+            action = this.pathStack.pop().action;
             break;
         case "RBFS":
-            action = this.pathStack.pop();
+            action = this.pathStack.pop().action;
             break;
         case "HillClimbing":
-            action = this.pathStack.pop();
+            action = this.pathStack.pop().action;
             break;
         default:
             break;
