@@ -18,8 +18,9 @@ public class Robot
     private int posCol;
     private String searchAlgorithm;
     public int expanded = 0;
+    private int timeStep = 0;
 
-    private PathFinder pathfind;
+    private PathFinder pathfinder;
     /**
         Initializes a Robot on a specific tile in the environment.
     */
@@ -38,7 +39,7 @@ public class Robot
         this.posCol = posCol;
         this.searchAlgorithm = searchAlgorithm;
 
-        this.pathfind = new PathFinder(this.env, this.posRow, this.posCol);
+        this.pathfinder = new PathFinder(this.env, this.posRow, this.posCol);
     }
     public int getPosRow()
     {
@@ -72,7 +73,7 @@ public class Robot
     {
         switch (searchAlgorithm) {
             case "BFS":
-                this.pathfind.BFS();
+                this.pathfinder.BFS();
                 break;
             case "DFS":
 
@@ -111,16 +112,13 @@ public class Robot
     {
         // you can get a tile's status with
         TileStatus status = env.getTileStatus(posRow, posCol);
-
         Action action = Action.DO_NOTHING;
 
         switch (searchAlgorithm) {
+            case "BFS":
+                action = this.pathfinder.path.get(timeStep).action;
+                break;
             case "DFS":
-                /**
-                 * Follow your constructed search tree in plan() to select
-                 * actions.
-                 */
-
                 break;
             case "AStar":
                 /**
@@ -147,6 +145,8 @@ public class Robot
             default:
                 break;
         }
+
+        this.timeStep += 1;
 
         return action;
     }

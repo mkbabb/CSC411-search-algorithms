@@ -48,14 +48,24 @@ public class VisualizeSimulation extends JFrame {
 	}
 	
 	public static void main(String[] args) {
-		String searchAlgorithm = args[0];
-		int start_row = Integer.parseInt(args[1]);
-		int start_col = Integer.parseInt(args[2]);
+		// String searchAlgorithm = args[0];
+		// int start_row = Integer.parseInt(args[1]);
+		// int start_col = Integer.parseInt(args[2]);
 		
-		int target_row = Integer.parseInt(args[3]);
-		int target_col = Integer.parseInt(args[4]);
+		// int target_row = Integer.parseInt(args[3]);
+		// int target_col = Integer.parseInt(args[4]);
 		
-		String env_id = "1";
+		// String env_id = "1";
+
+        String searchAlgorithm = "BFS";
+        
+        int start_row = 0;
+        int start_col = 0;
+
+        int target_row = 9;
+        int target_col = 9;
+
+        String env_id = "1";
 		
 	    JFrame frame = new VisualizeSimulation(searchAlgorithm, start_row, start_col, target_row, target_col, env_id);
 

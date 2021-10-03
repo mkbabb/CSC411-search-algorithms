@@ -23,21 +23,30 @@ public class PathFinder
     public Map<Node, Node> pathMap;
     public ArrayList<Node> path;
 
-    // TODO: 8 directions?
-    public static int[] rowVector = {-1, 1, 0, 0, -1, -1, 1, 1};
-    public static int[] colVector = {0, 0, 1, -1, -1, 1, -1, 1};
+    public static int[] rowVector = {0, 0, -1, 1};
+    public static int[] colVector = {1, -1, 0, 0};
 
-    // public static int[] rowVector = {-1, 1, 0, 0};
-    // public static int[] colVector = {0, 0, 1, -1};
+    public static Action mapActionIx(int ix)
+    {
+        return Action.values()[ix];
+    }
 
     public class Node implements Comparable<Node>
     {
         public int x, y;
+        public Action action;
 
         public Node(int x, int y)
         {
             this.x = x;
             this.y = y;
+            this.action = Action.DO_NOTHING;
+        }
+
+        public Node(int x, int y, Action action)
+        {
+            this(x, y);
+            this.action = action;
         }
 
         public int compareTo(Node other)
@@ -72,7 +81,7 @@ public class PathFinder
 
         public String toString()
         {
-            return String.format("(%s, %s)", this.x, this.y);
+            return String.format("(%s, %s); %s", this.x, this.y, this.action);
         }
     }
 
@@ -89,7 +98,7 @@ public class PathFinder
         this.rowPos = rowPos;
         this.colPos = colPos;
 
-        this.startNode = new Node(this.rowPos, this.colPos);
+        this.startNode = new Node(this.rowPos, this.colPos, null);
         this.endNode = null;
 
         this.visitedTiles = new boolean[this.getRows()][this.getCols()];
@@ -134,9 +143,8 @@ public class PathFinder
         int baseRow = positions[0];
         int baseCol = positions[1];
 
-        final var parent = new Node(baseRow, baseCol);
-
         for (int i = 0; i < rowVector.length; i++) {
+            final var parent = new Node(baseRow, baseCol);
             final var row = baseRow + rowVector[i];
             final var col = baseCol + colVector[i];
 
@@ -150,6 +158,10 @@ public class PathFinder
 
                 this.visitedTiles[row][col] = true;
                 this.pathMap.put(child, parent);
+
+                final var action = mapActionIx(i);
+
+                parent.action = action;
             }
         }
     }
@@ -188,7 +200,7 @@ public class PathFinder
                             row.append("G");
                             break;
                         default:
-                            break;
+                            row.append(".");
                     }
                 }
             }
@@ -196,7 +208,7 @@ public class PathFinder
         }
     }
 
-    public void backtrack()
+    public void getPath()
     {
         var node = this.endNode;
 
@@ -208,8 +220,7 @@ public class PathFinder
         }
 
         Collections.reverse(this.path);
-
-        this.printPath();
+        
     }
 
     public void BFS()
@@ -231,7 +242,7 @@ public class PathFinder
         }
 
         if (this.reachedTarget) {
-            this.backtrack();
+            this.getPath();
         }
     }
 }
