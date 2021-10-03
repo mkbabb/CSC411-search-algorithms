@@ -138,34 +138,6 @@ public class PathFinder
         return this.env.validPos(row, col) && !this.visitedTiles[row][col];
     }
 
-    public void expandNode(int... positions)
-    {
-        int baseRow = positions[0];
-        int baseCol = positions[1];
-
-        for (int i = 0; i < rowVector.length; i++) {
-            final var parent = new Node(baseRow, baseCol);
-            final var row = baseRow + rowVector[i];
-            final var col = baseCol + colVector[i];
-
-            if (this.isValid(row, col)) {
-                final var child = new Node(row, col);
-
-                final var tileCost = this.env.getTileCost(row, col);
-
-                this.rowQueue().add(row);
-                this.colQueue().add(col);
-
-                this.visitedTiles[row][col] = true;
-                this.pathMap.put(child, parent);
-
-                final var action = mapActionIx(i);
-
-                parent.action = action;
-            }
-        }
-    }
-
     public void printPath()
     {
         for (int i = 0; i < this.getRows(); i++) {
@@ -220,7 +192,29 @@ public class PathFinder
         }
 
         Collections.reverse(this.path);
-        
+    }
+
+    public ArrayList<Node> getNeighbors(int... positions)
+    {
+        int baseRow = positions[0];
+        int baseCol = positions[1];
+
+        final var neighbors = new ArrayList<Node>();
+
+        for (int i = 0; i < rowVector.length; i++) {
+            final var row = baseRow + rowVector[i];
+            final var col = baseCol + colVector[i];
+
+            if (this.isValid(row, col)) {
+                final var child = new Node(row, col);
+                child.action = mapActionIx(i);
+
+                this.visitedTiles[row][col] = true;
+                neighbors.add(child);
+            }
+        }
+
+        return neighbors;
     }
 
     public void BFS()
@@ -238,7 +232,16 @@ public class PathFinder
                 break;
             }
 
-            this.expandNode(row, col);
+            final var neighbors = this.getNeighbors(row, col);
+
+            neighbors.forEach((node) -> {
+                final var parent = new Node(row, col);
+                this.rowQueue().add(node.x);
+                this.colQueue().add(node.y);
+
+                this.pathMap.put(node, parent);
+                parent.action = node.action;
+            });
         }
 
         if (this.reachedTarget) {
