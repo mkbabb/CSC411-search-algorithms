@@ -97,7 +97,6 @@ public class PathFinder
         this.colPos = colPos;
 
         this.startNode = new Node(this.rowPos, this.colPos);
-        this.endNode = null;
 
         this.visitedTiles = new boolean[this.getRows()][this.getCols()];
 
@@ -107,6 +106,11 @@ public class PathFinder
         for (int i = 0; i < this.getRows(); i++) {
             for (int j = 0; j < this.getCols(); j++) {
                 this.visitedTiles[i][j] = false;
+                final var status = this.env.getTileStatus(i, j);
+
+                if (status == TileStatus.TARGET) {
+                    this.endNode = new Node(i, j);
+                }
             }
         }
     }
@@ -123,7 +127,11 @@ public class PathFinder
 
     public double h(Node node)
     {
-        return 0;
+        if (this.endNode != null) {
+            return manhattanDistance(node, this.endNode);
+        } else {
+            return 1000;
+        }
     }
 
     public int getRows()
@@ -212,7 +220,7 @@ public class PathFinder
                 final var child = new Node(row, col);
                 child.action = mapActionIx(i);
 
-                // this.visitedTiles[row][col] = true;
+                this.visitedTiles[row][col] = true;
                 neighbors.add(child);
             }
         }
@@ -327,15 +335,46 @@ public class PathFinder
                         gMap.put(node, tmpG);
                         fMap.put(node, f);
 
-                        final var parent =
-                            new Node(current.x, current.y, node.action);
-                        pathMap.put(node, parent);
+                        pathMap.put(
+                            node, new Node(current.x, current.y, node.action));
 
                         if (!openSet.contains(node)) {
                             openSet.add(node);
                         }
                     }
                 });
+        }
+    }
+
+    public void RBFS()
+    {
+        final var fMap = new HashMap<Node, Double>();
+
+        final var openSet =
+            new PriorityQueue<Node>(Comparator.comparing(fMap::get));
+        fMap.put(this.startNode, h(this.startNode));
+
+        openSet.add(this.startNode);
+
+        while (!openSet.isEmpty()) {
+            final var current = openSet.remove();
+
+            if (this.finishSearch(current)) {
+                break;
+            }
+            final var neighbors = this.getNeighbors(current);
+
+            neighbors.stream().forEach((node) -> {
+                final var cost = this.env.getTileCost(node.x, node.y);
+                final var f = h(node) + cost;
+                fMap.put(node, f);
+
+                pathMap.put(node, new Node(current.x, current.y, node.action));
+
+                if (!openSet.contains(node)) {
+                    openSet.add(node);
+                }
+            });
         }
     }
 
@@ -352,6 +391,7 @@ public class PathFinder
                 this.AStar();
                 break;
             case "RBFS":
+                this.RBFS();
                 break;
             case "HillClimbing":
                 break;
