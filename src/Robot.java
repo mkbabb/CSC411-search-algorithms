@@ -27,19 +27,19 @@ public class Robot {
     private String searchAlgorithm;
     public int expanded = 0;
 
-    public boolean done;
-    public boolean[][] visited;
+    private boolean done;
+    private boolean[][] visited;
 
-    public Node startNode, targetNode;
+    private Node startNode, targetNode;
 
-    public Map<Node, Node> nodeTree;
-    public Stack<Node> pathStack;
+    private Map<Node, Node> nodeTree;
+    private Stack<Node> pathStack;
 
-    public static int[][] directions = {{0, 0, -1, 1}, {1, -1, 0, 0}};
+    private int[][] directions = {{0, 0, -1, 1}, {1, -1, 0, 0}};
 
     public class Node implements Comparable<Node> {
         private int x, y;
-        public Action action = Action.DO_NOTHING;
+        private Action action = Action.DO_NOTHING;
 
         public Node(int x, int y) {
             this.x = x;
@@ -108,9 +108,7 @@ public class Robot {
         return Math.abs(n1.x - n2.x) + Math.abs(n1.y - n2.y);
     }
 
-    public double h(Node node) {
-        return manhattanDistance(node, targetNode);
-    }
+    public double h(Node node) { return manhattanDistance(node, targetNode); }
 
     public Node findTargetNode() {
         for (int i = 0; i < env.getRows(); i++) {
@@ -124,9 +122,7 @@ public class Robot {
         return null;
     }
 
-    public double getCost(Node node) {
-        return env.getTileCost(node.x, node.y);
-    }
+    public double getCost(Node node) { return env.getTileCost(node.x, node.y); }
 
     public ArrayList<Node> getAdjNodes(Node node) {
         int row = node.x;
@@ -150,8 +146,7 @@ public class Robot {
     }
 
     public boolean finished(Node node) {
-        return done =
-                   env.getTileStatus(node.x, node.y) == TileStatus.TARGET;
+        return done = env.getTileStatus(node.x, node.y) == TileStatus.TARGET;
     }
 
     public void createPath() {
