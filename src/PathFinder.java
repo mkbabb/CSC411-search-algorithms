@@ -21,7 +21,6 @@ public class PathFinder
     public boolean[][] visitedTiles;
 
     public Node startNode, endNode;
-    public Map<Node, Node> nodes;
 
     public Map<Node, Node> pathMap;
     public ArrayList<Node> path;
@@ -37,7 +36,6 @@ public class PathFinder
     public class Node implements Comparable<Node>
     {
         public int x, y;
-        public double f, g, h;
 
         public Action action;
 
@@ -46,10 +44,6 @@ public class PathFinder
             this.x = x;
             this.y = y;
             this.action = Action.DO_NOTHING;
-
-            this.f = Double.MAX_VALUE;
-            this.g = Double.MAX_VALUE;
-            this.h = 0;
         }
 
         public Node(int x, int y, Action action)
@@ -58,9 +52,18 @@ public class PathFinder
             this.action = action;
         }
 
-        @Override public int compareTo(Node n)
+        public int compareTo(Node other)
         {
-            return Double.compare(this.f, n.f);
+            final var xCompare = Integer.compare(x, other.x);
+            final var yCompare = Integer.compare(y, other.y);
+
+            if (xCompare != 0) {
+                return xCompare;
+            } else if (yCompare != 0) {
+                return yCompare;
+            }
+
+            return 0;
         }
 
         @Override public boolean equals(Object o)
@@ -93,13 +96,8 @@ public class PathFinder
         this.rowPos = rowPos;
         this.colPos = colPos;
 
-        this.startNode = new Node(this.rowPos, this.colPos, null);
-        this.startNode.g = 0;
-        this.startNode.h = h(this.startNode);
-
+        this.startNode = new Node(this.rowPos, this.colPos);
         this.endNode = null;
-
-        this.nodes = new HashMap<Node, Node>();
 
         this.visitedTiles = new boolean[this.getRows()][this.getCols()];
 
@@ -211,16 +209,11 @@ public class PathFinder
             final var col = baseCol + colVector[i];
 
             if (this.isValid(row, col)) {
-                var child = new Node(row, col);
-                child = this.nodes.getOrDefault(child, child);
-
-                final var action = mapActionIx(i);
-                child.action = action;
+                final var child = new Node(row, col);
+                child.action = mapActionIx(i);
 
                 // this.visitedTiles[row][col] = true;
                 neighbors.add(child);
-
-                this.nodes.put(node, node);
             }
         }
 
@@ -296,8 +289,15 @@ public class PathFinder
 
     public void AStar()
     {
-        final var openSet = new PriorityQueue<Node>();
+        final var fMap = new HashMap<Node, Double>();
+        final var gMap = new HashMap<Node, Double>();
+
+        final var openSet =
+            new PriorityQueue<Node>(Comparator.comparing(fMap::get));
         final var closedSet = new HashSet<Node>();
+
+        fMap.put(this.startNode, h(this.startNode));
+        gMap.put(this.startNode, 0.0);
 
         openSet.add(this.startNode);
 
@@ -310,17 +310,22 @@ public class PathFinder
             }
 
             final var neighbors = this.getNeighbors(current);
+            final var currentG = gMap.getOrDefault(current, Double.MAX_VALUE);
 
             neighbors.stream()
                 .filter((node) -> !closedSet.contains(node))
                 .forEach((node) -> {
                     final var cost = this.env.getTileCost(node.x, node.y);
-                    final var g =
-                        current.g + manhattanDistance(current, node) + cost;
+                    final var nodeG = gMap.getOrDefault(node, Double.MAX_VALUE);
 
-                    if (g < node.g) {
-                        node.g = g;
-                        node.f = g + h(node);
+                    final var tmpG =
+                        currentG + cost + manhattanDistance(current, node);
+
+                    if (tmpG < nodeG) {
+                        final var f = tmpG + h(node);
+
+                        gMap.put(node, tmpG);
+                        fMap.put(node, f);
 
                         final var parent =
                             new Node(current.x, current.y, node.action);
@@ -342,6 +347,7 @@ public class PathFinder
                 break;
             case "DFS":
                 this.DFS();
+                break;
             case "AStar":
                 this.AStar();
                 break;
