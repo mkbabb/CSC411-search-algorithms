@@ -100,8 +100,8 @@ public class Robot {
 
     // BEGIN
     public void reset() {
-        this.nodeTree.clear();
-        this.visited = new boolean[this.env.getRows()][this.env.getCols()];
+        nodeTree.clear();
+        visited = new boolean[env.getRows()][env.getCols()];
     }
 
     public double manhattanDistance(Node n1, Node n2) {
@@ -109,7 +109,7 @@ public class Robot {
     }
 
     public double h(Node node) {
-        return this.manhattanDistance(node, this.targetNode);
+        return manhattanDistance(node, targetNode);
     }
 
     public Node findTargetNode() {
@@ -125,7 +125,7 @@ public class Robot {
     }
 
     public double getCost(Node node) {
-        return this.env.getTileCost(node.x, node.y);
+        return env.getTileCost(node.x, node.y);
     }
 
     public ArrayList<Node> getAdjNodes(Node node) {
@@ -138,54 +138,54 @@ public class Robot {
             final var x = row + directions[0][i];
             final var y = col + directions[1][i];
 
-            if (this.env.validPos(x, y) && !this.visited[x][y]) {
+            if (env.validPos(x, y) && !visited[x][y]) {
                 final var child = new Node(x, y);
                 child.action = Action.values()[i];
                 adjNodes.add(child);
-                this.visited[x][y] = true;
+                visited[x][y] = true;
             }
         }
-        this.expanded += 1;
+        expanded += 1;
         return adjNodes;
     }
 
     public boolean finished(Node node) {
-        return this.done =
-                   this.env.getTileStatus(node.x, node.y) == TileStatus.TARGET;
+        return done =
+                   env.getTileStatus(node.x, node.y) == TileStatus.TARGET;
     }
 
     public void createPath() {
-        var node = this.targetNode;
-        this.pathStack.add(this.targetNode);
+        var node = targetNode;
+        pathStack.add(targetNode);
 
         while (true) {
-            if (node == null || node.equals(this.startNode)) {
+            if (node == null || node.equals(startNode)) {
                 break;
             } else {
-                node = this.nodeTree.get(node);
-                this.pathStack.add(node);
+                node = nodeTree.get(node);
+                pathStack.add(node);
             }
         }
     }
 
     public void DFS() {
         final Stack<Node> S = new Stack<Node>();
-        S.add(this.startNode);
+        S.add(startNode);
 
         while (!S.isEmpty()) {
             final var node = S.pop();
 
-            if (this.finished(node)) {
+            if (finished(node)) {
                 break;
             }
 
-            final var adjNodes = this.getAdjNodes(node);
+            final var adjNodes = getAdjNodes(node);
 
             for (final var child : adjNodes) {
                 S.push(child);
                 final var parent = new Node(node.x, node.y);
                 parent.action = child.action;
-                this.nodeTree.put(child, parent);
+                nodeTree.put(child, parent);
             }
         }
     }
@@ -198,21 +198,21 @@ public class Robot {
             new PriorityQueue<Node>(Comparator.comparing(fCost::get));
         final var closed = new HashSet<Node>();
 
-        fCost.put(this.startNode, h(this.targetNode));
-        gCost.put(this.startNode, 0.0);
+        fCost.put(startNode, h(targetNode));
+        gCost.put(startNode, 0.0);
 
-        open.add(this.startNode);
+        open.add(startNode);
 
         while (!open.isEmpty()) {
             final var node = open.remove();
 
-            if (this.finished(node)) {
+            if (finished(node)) {
                 break;
             }
 
             closed.add(node);
 
-            final var adjNodes = this.getAdjNodes(node);
+            final var adjNodes = getAdjNodes(node);
             var currentG = gCost.get(node);
             currentG = currentG == null ? Double.MAX_VALUE : currentG;
 
@@ -225,7 +225,7 @@ public class Robot {
                 final var d =
                     Math.abs(node.x - child.x) + Math.abs(node.y - child.y);
 
-                final var tentativeG = currentG + this.getCost(node) + d;
+                final var tentativeG = currentG + getCost(node) + d;
 
                 if (tentativeG < g) {
                     final var f = tentativeG + h(child);
@@ -235,7 +235,7 @@ public class Robot {
 
                     final var parent = new Node(node.x, node.y);
                     parent.action = child.action;
-                    this.nodeTree.put(child, parent);
+                    nodeTree.put(child, parent);
 
                     if (!open.contains(child)) {
                         open.add(child);
@@ -249,9 +249,9 @@ public class Robot {
         final var fCost = new HashMap<Node, Double>();
         final var PQ =
             new PriorityQueue<Node>(Comparator.comparing(fCost::get));
-        fCost.put(this.startNode, h(this.startNode));
+        fCost.put(startNode, h(startNode));
 
-        PQ.add(this.startNode);
+        PQ.add(startNode);
 
         RBFSImpl(PQ, fCost);
     }
@@ -259,48 +259,47 @@ public class Robot {
     public void RBFSImpl(PriorityQueue<Node> PQ, HashMap<Node, Double> fCost) {
         final var node = PQ.remove();
 
-        if (this.finished(node)) {
+        if (finished(node)) {
             return;
         }
-        final var adjNodes = this.getAdjNodes(node);
+        final var adjNodes = getAdjNodes(node);
 
         for (final var child : adjNodes) {
-            final var f = h(child) + this.getCost(child);
+            final var f = h(child) + getCost(child);
             fCost.put(child, f);
 
             final var parent = new Node(node.x, node.y);
             parent.action = child.action;
-            this.nodeTree.put(child, parent);
+            nodeTree.put(child, parent);
 
             if (!PQ.contains(child)) {
                 PQ.add(child);
             }
         };
-
         RBFSImpl(PQ, fCost);
     }
 
     public void HillClimbing() {
         final var Q = new ArrayDeque<Node>();
-        var node = this.startNode;
+        var node = startNode;
         Q.add(node);
 
         final var random = new Random();
 
-        while (!this.finished(node)) {
+        while (!finished(node)) {
             node = Q.remove();
-            final var adjNodes = this.getAdjNodes(node);
+            final var adjNodes = getAdjNodes(node);
 
             if (adjNodes.isEmpty()) {
-                node = this.startNode;
-                this.reset();
+                node = startNode;
+                reset();
                 Q.clear();
                 Q.add(node);
             } else {
                 final var child = adjNodes.get(random.nextInt(adjNodes.size()));
                 final var parent = new Node(node.x, node.y);
                 parent.action = child.action;
-                this.nodeTree.put(child, parent);
+                nodeTree.put(child, parent);
 
                 Q.add(child);
             }
@@ -309,20 +308,20 @@ public class Robot {
     // END
 
     public void printPath() {
-        for (int i = 0; i < this.env.getRows(); i++) {
+        for (int i = 0; i < env.getRows(); i++) {
             final var row = new StringBuilder();
 
-            for (int j = 0; j < this.env.getCols(); j++) {
+            for (int j = 0; j < env.getCols(); j++) {
                 if (j > 0) {
                     row.append(" ");
                 }
 
                 final var node = new Node(i, j);
 
-                if (this.pathStack.contains(node)) {
+                if (pathStack.contains(node)) {
                     row.append("*");
                 } else {
-                    final var status = this.env.getTileStatus(i, j);
+                    final var status = env.getTileStatus(i, j);
 
                     switch (status) {
                     case IMPASSABLE:
@@ -355,22 +354,22 @@ public class Robot {
     public void plan() {
         switch (searchAlgorithm) {
         case "DFS":
-            this.DFS();
+            DFS();
             break;
         case "AStar":
-            this.AStar();
+            AStar();
             break;
         case "RBFS":
-            this.RBFS();
+            RBFS();
             break;
         case "HillClimbing":
-            this.HillClimbing();
+            HillClimbing();
         default:
             break;
         }
-        if (this.done) {
-            this.createPath();
-            this.printPath();
+        if (done) {
+            createPath();
+            printPath();
         }
     }
 
@@ -385,22 +384,22 @@ public class Robot {
 
         Action action = Action.DO_NOTHING;
 
-        if (this.pathStack.isEmpty()) {
+        if (pathStack.isEmpty()) {
             return action;
         }
 
         switch (searchAlgorithm) {
         case "DFS":
-            action = this.pathStack.pop().action;
+            action = pathStack.pop().action;
             break;
         case "AStar":
-            action = this.pathStack.pop().action;
+            action = pathStack.pop().action;
             break;
         case "RBFS":
-            action = this.pathStack.pop().action;
+            action = pathStack.pop().action;
             break;
         case "HillClimbing":
-            action = this.pathStack.pop().action;
+            action = pathStack.pop().action;
             break;
         default:
             break;
