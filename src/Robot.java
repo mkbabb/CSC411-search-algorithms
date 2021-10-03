@@ -46,14 +46,19 @@ public class Robot {
             this.y = y;
         }
 
-        public int getX() { return this.x; }
+        public int getX() { return x; }
 
-        public int getY() { return this.y; }
+        public int getY() { return y; }
 
         public int compareTo(Node other) {
             return Comparator.comparing(Node::getX)
                 .thenComparing(Node::getY)
                 .compare(this, other);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(x, y);
         }
 
         @Override
@@ -63,11 +68,6 @@ public class Robot {
             }
             Node node = (Node)o;
             return x == node.x && y == node.y;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(x, y);
         }
     }
 
@@ -289,7 +289,8 @@ public class Robot {
                 Q.clear();
                 Q.add(node);
             } else {
-                final Node child = adjNodes.get(random.nextInt(adjNodes.size()));
+                final Node child =
+                    adjNodes.get(random.nextInt(adjNodes.size()));
                 final Node parent = new Node(node.x, node.y);
                 parent.action = child.action;
                 nodeTree.put(child, parent);
