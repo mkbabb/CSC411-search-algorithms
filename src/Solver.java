@@ -21,8 +21,8 @@ public class Solver {
     public int energyCost = 0;
     public int expanded = 0;
 
-    public static int[] rv = {0, 0, -1, 1};
     public static int[] cv = {1, -1, 0, 0};
+    public static int[] rv = {0, 0, -1, 1};
 
     public Solver(Environment env, int posRow, int posCol) {
         this.complete = false;
@@ -120,52 +120,6 @@ public class Solver {
         return neighbors;
     }
 
-    public void printPath() {
-        for (int i = 0; i < this.env.getRows(); i++) {
-            final var row = new StringBuilder();
-
-            for (int j = 0; j < this.env.getCols(); j++) {
-                if (j > 0) {
-                    row.append(" ");
-                }
-                final var node = new Node(i, j);
-                final var status = this.getStatus(node);
-
-                if (this.nodePath.contains(node)) {
-                    if (status == TileStatus.TARGET) {
-                        row.append("G");
-                    } else if (this.nodePath.peek().equals(node)) {
-                        row.append("S");
-                    } else {
-                        row.append("*");
-                    }
-                } else {
-                    switch (status) {
-                        case IMPASSABLE:
-                            row.append("x");
-                            break;
-                        case MOUNTAIN:
-                            row.append("m");
-                            break;
-                        case PLAIN:
-                            row.append(".");
-                            break;
-                        case PUDDLE:
-                            row.append("w");
-                            break;
-                        case TARGET:
-                            row.append("G");
-                            break;
-                        default:
-                            row.append(".");
-                    }
-                }
-            }
-
-            System.out.println(row);
-        }
-    }
-
     public Action getAction() {
         if (!this.nodePath.isEmpty()) {
             final var node = this.nodePath.pop();
@@ -182,7 +136,6 @@ public class Solver {
 
         if (this.complete) {
             this.getPath();
-            // this.printPath();
         }
     }
 }
