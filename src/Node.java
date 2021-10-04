@@ -37,8 +37,9 @@ public class Node {
 
     @Override
     public boolean equals(Object o) {
-        if (o == this)
+        if (o == this) {
             return true;
+        }
         if (!(o instanceof Node)) {
             return false;
         }

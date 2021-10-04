@@ -1,44 +1,28 @@
 *********
 DFS
 
-Average timeSteps: 49
-Average expanded: 261
-Average energy cost: 57
+Average timeSteps: 440
+Average expanded: 187
+Average energy cost: 70
 All done: true
 *********
 
 *********
 AStar
 
-Average timeSteps: 11
-Average expanded: 55
-Average energy cost: 11
+Average timeSteps: 566
+Average expanded: 114
+Average energy cost: 22
 All done: true
 *********
 
 *********
 RBFS
 
-Average timeSteps: 11
-Average expanded: 37
-Average energy cost: 11
+Average timeSteps: 574
+Average expanded: 56
+Average energy cost: 24
 All done: true
 *********
 
-*********
-HillClimbing
-
-Average timeSteps: 35
-Average expanded: 215
-Average energy cost: 35
-All done: true
-*********
-
-*********
-BFS
-
-Average timeSteps: 11
-Average expanded: 90
-Average energy cost: 11
-All done: true
-*********
+Completely passed: true

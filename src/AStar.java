@@ -8,34 +8,34 @@ public class AStar extends Solver {
     }
 
     public void solutionDriver() {
-        final var openSet = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
-        final var closedSet = new HashSet<Node>();
+        final PriorityQueue<Node> opened = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
+        final HashSet<Node> closed = new HashSet<Node>();
 
-        this.startNode.f = heuristicFunction(this.startNode);
-        this.startNode.g = 0.0;
+        startNode.f = heuristicFunction(startNode);
+        startNode.g = 0.0;
 
-        openSet.add(this.startNode);
+        opened.add(startNode);
 
-        while (!openSet.isEmpty()) {
-            final var currentNode = openSet.remove();
-            closedSet.add(currentNode);
+        while (!opened.isEmpty()) {
+            final var currentNode = opened.remove();
+            closed.add(currentNode);
 
-            if (this.completed(currentNode)) {
+            if (completed(currentNode)) {
                 break;
             }
 
-            final var children = this.getChildren(currentNode);
+            final var children = getChildren(currentNode);
             for (final var child : children) {
-                if (!closedSet.contains(child)) {
-                    final var testingGValue =
-                        currentNode.g + this.getCost(child) + euclideanDistance(currentNode, child);
+                if (!closed.contains(child)) {
+                    final double testingGValue =
+                        currentNode.g + getCost(child) + euclideanDistance(currentNode, child);
 
                     if (testingGValue < child.g) {
                         child.g = testingGValue;
                         child.f = testingGValue + heuristicFunction(child);
 
-                        if (!openSet.contains(child)) {
-                            openSet.add(child);
+                        if (!opened.contains(child)) {
+                            opened.add(child);
                         }
                     }
                 }

@@ -8,7 +8,7 @@ public class RBFS extends Solver {
     }
 
     public void solutionDriver() {
-        final var nodes = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
+        final PriorityQueue<Node> nodes = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
         this.startNode.f = heuristicFunction(startNode);
         nodes.add(startNode);
 
@@ -16,7 +16,7 @@ public class RBFS extends Solver {
     }
 
     public void RBFSDriver(PriorityQueue<Node> nodes) {
-        final var node = nodes.remove();
+        final Node node = nodes.remove();
 
         if (this.completed(node)) {
             return;

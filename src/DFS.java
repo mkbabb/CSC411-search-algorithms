@@ -6,11 +6,11 @@ public class DFS extends Solver {
     }
 
     public void solutionDriver() {
-        final var nodes = new Stack<Node>();
+        final Stack<Node> nodes = new Stack<Node>();
         nodes.add(this.startNode);
 
         while (!nodes.isEmpty()) {
-            final var currentNode = nodes.pop();
+            final Node currentNode = nodes.pop();
             if (this.completed(currentNode)) {
                 break;
             }
