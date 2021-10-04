@@ -11,6 +11,10 @@
    env.getTargetCol()
 */
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 public class Robot {
     private Environment env;
     private int posRow;
@@ -18,10 +22,14 @@ public class Robot {
     private String searchAlgorithm;
 
     public int expanded = 0;
+    public int energyCost = 0;
+    public boolean completed = false;
 
     public DFS dfs;
     public AStar aStar;
     public RBFS rbfs;
+
+    public Map<String, Solver> solvers;
 
     /**
         Initializes a Robot on a specific tile in the environment.
@@ -38,6 +46,14 @@ public class Robot {
         this.dfs = new DFS(env, posRow, posCol);
         this.aStar = new AStar(env, posRow, posCol);
         this.rbfs = new RBFS(env, posRow, posCol);
+
+        this.solvers = new HashMap<String, Solver>() {
+            {
+                put("DFS", dfs);
+                put("AStar", aStar);
+                put("RBFS", rbfs);
+            }
+        };
     }
 
     public int getPosRow() {
@@ -63,20 +79,14 @@ public class Robot {
      * Construct search tree before Robot start moving.
      */
     public void plan() {
-        switch (searchAlgorithm) {
-            case "DFS":
-                this.dfs.solve();
-                break;
-            case "AStar":
-                this.aStar.solve();
-                break;
-            case "RBFS":
-                this.rbfs.solve();
-                break;
-            case "HillClimbing":
-                break;
-            default:
-                break;
+        final var solver = this.solvers.get(searchAlgorithm);
+
+        if (solver != null) {
+            solver.solve();
+
+            this.expanded = solver.expanded;
+            this.energyCost = solver.energyCost;
+            this.completed = solver.complete;
         }
     }
 
@@ -87,21 +97,10 @@ public class Robot {
     */
     public Action getAction() {
         var action = Action.DO_NOTHING;
+        final var solver = this.solvers.get(searchAlgorithm);
 
-        switch (searchAlgorithm) {
-            case "DFS":
-                action = this.dfs.getAction();
-                break;
-            case "AStar":
-                action = this.aStar.getAction();
-                break;
-            case "RBFS":
-                action = this.rbfs.getAction();
-                break;
-            case "HillClimbing":
-                break;
-            default:
-                break;
+        if (solver != null) {
+            action = solver.getAction();
         }
 
         return action;

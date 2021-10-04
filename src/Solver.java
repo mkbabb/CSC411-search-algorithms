@@ -104,10 +104,11 @@ public class Solver {
                 var child = new Node(row, col);
                 child = this.getOrPutNode(child);
 
+                this.actionMap.put(child, Action.values()[i]);
+
                 if (!child.visited) {
                     child.parent = node;
                     child.visited = true;
-                    this.actionMap.put(child, Action.values()[i]);
 
                     neighbors.add(child);
                 }
@@ -180,7 +181,7 @@ public class Solver {
 
         if (this.complete) {
             this.getPath();
-            this.printPath();
+            // this.printPath();
         }
     }
 }
