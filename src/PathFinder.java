@@ -1,20 +1,14 @@
-import java.util.ArrayDeque;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.PriorityQueue;
-import java.util.Random;
-import java.util.Set;
 import java.util.Stack;
 
 public class PathFinder {
     public Environment env;
-    public int energyCost = 0;
-    public int expanded = 0;
 
     public int rowPos, colPos;
 
@@ -27,59 +21,11 @@ public class PathFinder {
 
     public Node startNode, endNode;
 
+    public int energyCost = 0;
+    public int expanded = 0;
+
     public static int[] rowVector = {0, 0, -1, 1};
     public static int[] colVector = {1, -1, 0, 0};
-
-    public class Node {
-        private int x, y;
-        private boolean visited = false;
-        private Node parent = null;
-
-        public double f = 0;
-        public double g = Double.MAX_VALUE;
-
-        public Node(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        public Node(int x, int y, Node parent) {
-            this(x, y);
-            this.parent = parent;
-        }
-
-        public int getX() {
-            return this.x;
-        }
-
-        public int getY() {
-            return this.y;
-        }
-
-        public double getF() {
-            return this.f;
-        }
-
-        public int compareTo(Node node) {
-            return Comparator.comparing(Node::getX).thenComparing(Node::getY).compare(this, node);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o == this)
-                return true;
-            if (!(o instanceof Node)) {
-                return false;
-            }
-            Node node = (Node) o;
-            return Objects.equals(this.x, node.x) && Objects.equals(this.y, node.y);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.x, this.y);
-        }
-    }
 
     public PathFinder(Environment env, int rowPos, int colPos) {
         this.complete = false;
@@ -94,8 +40,8 @@ public class PathFinder {
 
         this.startNode = new Node(rowPos, colPos);
 
-        for (int i = 0; i < this.getRows(); i++) {
-            for (int j = 0; j < this.getCols(); j++) {
+        for (int i = 0; i < this.env.getRows(); i++) {
+            for (int j = 0; j < this.env.getCols(); j++) {
                 if (this.env.getTileStatus(i, j) == TileStatus.TARGET) {
                     this.endNode = new Node(i, j);
                 }
@@ -106,27 +52,15 @@ public class PathFinder {
         this.allNodes.put(endNode, endNode);
     }
 
-    public double euclideanDistance(Node n1, Node n2) {
-        return Math.sqrt(Math.pow(n1.x - n2.x, 2) + Math.pow(n1.y - n2.y, 2));
+    public double euclideanDistance(Node node1, Node node2) {
+        return Math.sqrt(Math.pow(node1.x - node2.x, 2) + Math.pow(node1.y - node2.y, 2));
     }
 
-    public double heuristic(Node node) {
-        if (this.endNode != null) {
-            return euclideanDistance(node, this.endNode);
-        } else {
-            return 1000;
-        }
+    public double heuristicFunction(Node node) {
+        return euclideanDistance(node, this.endNode);
     }
 
-    public int getRows() {
-        return this.env.getRows();
-    }
-
-    public int getCols() {
-        return this.env.getCols();
-    }
-
-    public boolean isValid(Node node) {
+    public boolean validPos(Node node) {
         return this.env.validPos(node.x, node.y);
     }
 
@@ -193,7 +127,6 @@ public class PathFinder {
 
         while (!nodes.isEmpty()) {
             final var currentNode = nodes.pop();
-
             if (this.completed(currentNode)) {
                 break;
             }
@@ -209,7 +142,7 @@ public class PathFinder {
         final var openSet = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
         final var closedSet = new HashSet<Node>();
 
-        this.startNode.f = heuristic(this.startNode);
+        this.startNode.f = heuristicFunction(this.startNode);
         this.startNode.g = 0.0;
 
         openSet.add(this.startNode);
@@ -230,7 +163,7 @@ public class PathFinder {
 
                     if (testingGValue < child.g) {
                         child.g = testingGValue;
-                        child.f = testingGValue + heuristic(child);
+                        child.f = testingGValue + heuristicFunction(child);
 
                         if (!openSet.contains(child)) {
                             openSet.add(child);
@@ -243,7 +176,7 @@ public class PathFinder {
 
     public void RBFS() {
         final var nodes = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
-        this.startNode.f = heuristic(startNode);
+        this.startNode.f = heuristicFunction(startNode);
         nodes.add(startNode);
 
         RBFSDriver(nodes);
@@ -258,7 +191,7 @@ public class PathFinder {
         final var children = this.getChildren(node);
 
         for (final Node child : children) {
-            child.f = heuristic(child) + getCost(child);
+            child.f = heuristicFunction(child) + getCost(child);
 
             if (!nodes.contains(child)) {
                 nodes.add(child);
@@ -268,34 +201,11 @@ public class PathFinder {
         RBFSDriver(nodes);
     }
 
-    public void search(String searchAlgorithm) {
-        switch (searchAlgorithm) {
-            case "DFS":
-                this.DFS();
-                break;
-            case "AStar":
-                this.AStar();
-                break;
-            case "RBFS":
-                this.RBFS();
-                break;
-            case "HillClimbing":
-                break;
-            default:
-                break;
-        }
-
-        if (this.complete) {
-            this.getPath();
-            this.printPath();
-        }
-    }
-
     public void printPath() {
-        for (int i = 0; i < this.getRows(); i++) {
+        for (int i = 0; i < this.env.getRows(); i++) {
             final var row = new StringBuilder();
 
-            for (int j = 0; j < this.getCols(); j++) {
+            for (int j = 0; j < this.env.getCols(); j++) {
                 if (j > 0) {
                     row.append(" ");
                 }
@@ -332,6 +242,7 @@ public class PathFinder {
                     }
                 }
             }
+
             System.out.println(row);
         }
     }

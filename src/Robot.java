@@ -58,6 +58,29 @@ public class Robot {
      */
     public void plan() {
         this.pathfinder.search(searchAlgorithm);
+
+        switch (searchAlgorithm) {
+            case "DFS":
+                this.DFS();
+                break;
+            case "AStar":
+                this.AStar();
+                break;
+            case "RBFS":
+                this.RBFS();
+                break;
+            case "HillClimbing":
+                break;
+            default:
+                break;
+        }
+
+        if (this.complete) {
+            this.getPath();
+            this.printPath();
+        }
+
+        
         this.expanded = this.pathfinder.expanded;
     }
 
