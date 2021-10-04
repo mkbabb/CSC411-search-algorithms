@@ -10,7 +10,7 @@ import java.util.Stack;
 public class PathFinder {
     public Environment env;
 
-    public int rowPos, colPos;
+    public int posRow, posCol;
 
     public boolean complete;
 
@@ -27,18 +27,18 @@ public class PathFinder {
     public static int[] rowVector = {0, 0, -1, 1};
     public static int[] colVector = {1, -1, 0, 0};
 
-    public PathFinder(Environment env, int rowPos, int colPos) {
+    public PathFinder(Environment env, int posRow, int posCol) {
         this.complete = false;
 
         this.env = env;
-        this.rowPos = rowPos;
-        this.colPos = colPos;
+        this.posRow = posRow;
+        this.posCol = posCol;
 
         this.actionMap = new HashMap<Node, Action>();
         this.nodePath = new Stack<Node>();
         this.allNodes = new HashMap<Node, Node>();
 
-        this.startNode = new Node(rowPos, colPos);
+        this.startNode = new Node(posRow, posCol);
 
         for (int i = 0; i < this.env.getRows(); i++) {
             for (int j = 0; j < this.env.getCols(); j++) {

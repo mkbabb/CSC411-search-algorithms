@@ -19,7 +19,10 @@ public class Robot {
 
     public int expanded = 0;
 
-    public PathFinder pathfinder;
+    public DFS dfs;
+    public AStar aStar;
+    public RBFS rbfs;
+
     /**
         Initializes a Robot on a specific tile in the environment.
     */
@@ -32,8 +35,11 @@ public class Robot {
         this.posCol = posCol;
         this.searchAlgorithm = searchAlgorithm;
 
-        this.pathfinder = new PathFinder(this.env, this.posRow, this.posCol);
+        this.dfs = new DFS(env, posRow, posCol);
+        this.aStar = new AStar(env, posRow, posCol);
+        this.rbfs = new RBFS(env, posRow, posCol);
     }
+
     public int getPosRow() {
         return posRow;
     }
@@ -57,31 +63,21 @@ public class Robot {
      * Construct search tree before Robot start moving.
      */
     public void plan() {
-        this.pathfinder.search(searchAlgorithm);
-
         switch (searchAlgorithm) {
             case "DFS":
-                this.DFS();
+                this.dfs.solve();
                 break;
             case "AStar":
-                this.AStar();
+                this.aStar.solve();
                 break;
             case "RBFS":
-                this.RBFS();
+                this.rbfs.solve();
                 break;
             case "HillClimbing":
                 break;
             default:
                 break;
         }
-
-        if (this.complete) {
-            this.getPath();
-            this.printPath();
-        }
-
-        
-        this.expanded = this.pathfinder.expanded;
     }
 
     /**
@@ -92,9 +88,20 @@ public class Robot {
     public Action getAction() {
         var action = Action.DO_NOTHING;
 
-        if (!this.pathfinder.nodePath.isEmpty()) {
-            final var node = this.pathfinder.nodePath.pop();
-            action = this.pathfinder.actionMap.get(node);
+        switch (searchAlgorithm) {
+            case "DFS":
+                action = this.dfs.getAction();
+                break;
+            case "AStar":
+                action = this.aStar.getAction();
+                break;
+            case "RBFS":
+                action = this.rbfs.getAction();
+                break;
+            case "HillClimbing":
+                break;
+            default:
+                break;
         }
 
         return action;
