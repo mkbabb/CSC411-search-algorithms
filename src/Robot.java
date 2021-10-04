@@ -17,10 +17,11 @@ public class Robot
     private int posRow;
     private int posCol;
     private String searchAlgorithm;
-    public int expanded = 0;
-    private int timeStep = 0;
 
-    private PathFinder pathfinder;
+    public int expanded = 0;
+    public int timeStep = 0;
+
+    public PathFinder pathfinder;
     /**
         Initializes a Robot on a specific tile in the environment.
     */
@@ -72,6 +73,7 @@ public class Robot
     public void plan()
     {
         this.pathfinder.search(searchAlgorithm);
+        this.expanded = this.pathfinder.expanded;
     }
 
     /**
@@ -81,12 +83,12 @@ public class Robot
     */
     public Action getAction()
     {
-        // you can get a tile's status with
-        TileStatus status = env.getTileStatus(posRow, posCol);
-        Action action = Action.DO_NOTHING;
+        var action = Action.DO_NOTHING;
 
-        action = this.pathfinder.path.get(this.timeStep).action;
-        this.timeStep += 1;
+        if (!this.pathfinder.path.isEmpty()) {
+            action = this.pathfinder.path.get(this.timeStep).action;
+            this.timeStep += 1;
+        }
 
         return action;
     }

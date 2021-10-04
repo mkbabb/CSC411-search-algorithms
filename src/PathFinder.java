@@ -1,6 +1,5 @@
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -8,12 +7,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Random;
 
 public class PathFinder
 {
     public Environment env;
+    public int energyCost = 0;
+    public int expanded = 0;
 
     public int rowPos, colPos;
 
@@ -204,6 +204,7 @@ public class PathFinder
         this.path.add(this.endNode);
 
         while (node != null && !node.equals(this.startNode)) {
+            this.energyCost += this.env.getTileCost(node.x, node.y);
             node = this.pathMap.get(node);
             this.path.add(node);
         }
@@ -229,6 +230,8 @@ public class PathFinder
                 neighbors.add(child);
             }
         }
+
+        this.expanded += neighbors.size();
 
         return neighbors;
     }
@@ -354,93 +357,65 @@ public class PathFinder
     public void RBFS()
     {
         final var fMap = new HashMap<Node, Double>();
+
         final var openSet =
             new PriorityQueue<Node>(Comparator.comparing(fMap::get));
         fMap.put(this.startNode, heuristic(this.startNode));
 
         openSet.add(this.startNode);
 
-        RBFSImpl(openSet, fMap);
-    }
+        while (!openSet.isEmpty()) {
+            final var current = openSet.remove();
 
-    public void RBFSImpl(
-        PriorityQueue<Node> openSet,
-        HashMap<Node, Double> fMap)
-    {
-        final var current = openSet.remove();
-
-        if (this.finishSearch(current)) {
-            return;
-        }
-        final var neighbors = this.getNeighbors(current);
-
-        neighbors.stream().forEach((node) -> {
-            final var cost = this.env.getTileCost(node.x, node.y);
-            final var f = heuristic(node) + cost;
-            fMap.put(node, f);
-
-            pathMap.put(node, new Node(current.x, current.y, node.action));
-
-            if (!openSet.contains(node)) {
-                openSet.add(node);
+            if (this.finishSearch(current)) {
+                break;
             }
-        });
-        RBFSImpl(openSet, fMap);
+            final var neighbors = this.getNeighbors(current);
+
+            neighbors.stream().forEach((node) -> {
+                final var cost = this.env.getTileCost(node.x, node.y);
+                final var f = heuristic(node) + cost;
+                fMap.put(node, f);
+
+                pathMap.put(node, new Node(current.x, current.y, node.action));
+
+                if (!openSet.contains(node)) {
+                    openSet.add(node);
+                }
+            });
+        }
     }
-
-    // public void HillClimbing()
-    // {
-    //     final var fMap = new HashMap<Node, Double>();
-
-    //     final var openSet =
-    //         new PriorityQueue<Node>(Comparator.comparing(fMap::get));
-    //     fMap.put(this.startNode, 0.0);
-
-    //     openSet.add(this.startNode);
-
-    //     while (!openSet.isEmpty()) {
-    //         final var current = openSet.remove();
-
-    //         if (this.finishSearch(current)) {
-    //             break;
-    //         }
-    //         final var neighbors = this.getNeighbors(current);
-
-    //         neighbors.stream().map((node) -> {
-    //             final var cost = this.env.getTileCost(node.x, node.y);
-    //             fMap.put(node, 1.0 * cost);
-    //             openSet.add(node);
-    //             pathMap.put(node, new Node(current.x, current.y,
-    //             node.action)); return node;
-    //         });
-    //     }
-    // }
 
     public void HillClimbing()
     {
-        final var openSet = new ArrayDeque<Node>();
-        var current = this.startNode;
-        openSet.add(current);
+        final var fMap = new HashMap<Node, Double>();
 
-        final var random = new Random();
+        final var openSet =
+            new PriorityQueue<Node>(Comparator.comparing(fMap::get));
+        fMap.put(this.startNode, 0.0);
 
-        while (!this.finishSearch(current)) {
-            current = openSet.remove();
+        openSet.add(this.startNode);
 
+        while (!openSet.isEmpty()) {
+            final var current = openSet.remove();
+
+            if (this.finishSearch(current)) {
+                break;
+            }
             final var neighbors = this.getNeighbors(current);
 
-            if (neighbors.isEmpty()) {
-                openSet.add(this.startNode);
-                this.reset();
-            } else {
-                final var node =
-                    neighbors.get(random.nextInt(neighbors.size()));
+            neighbors.stream().forEach((node) -> {
+                final var cost = this.env.getTileCost(node.x, node.y);
+                fMap.put(node, 1.0 * cost);
                 pathMap.put(node, new Node(current.x, current.y, node.action));
-                openSet.add(node);
-            }
+
+                if (!openSet.contains(node)) {
+                    openSet.add(node);
+                }
+            });
         }
     }
-    
+
     public ArrayList<Node> search(String searchAlgorithm)
     {
         switch (searchAlgorithm) {
@@ -465,7 +440,7 @@ public class PathFinder
 
         if (this.reachedTarget) {
             this.getPath();
-            this.printPath();
+            // this.printPath();
             return this.path;
         } else {
             return null;
