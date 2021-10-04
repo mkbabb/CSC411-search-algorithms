@@ -8,131 +8,102 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Random;
+import java.util.Set;
+import java.util.Stack;
 
-public class PathFinder
-{
+public class PathFinder {
     public Environment env;
     public int energyCost = 0;
     public int expanded = 0;
 
     public int rowPos, colPos;
 
-    public boolean reachedTarget;
+    public boolean complete;
 
-    public boolean[][] visitedTiles;
+    public Map<Node, Action> actionMap;
+    public Map<Node, Node> allNodes;
+
+    public Stack<Node> nodePath;
 
     public Node startNode, endNode;
-
-    public Map<Node, Node> pathMap;
-    public ArrayList<Node> path;
 
     public static int[] rowVector = {0, 0, -1, 1};
     public static int[] colVector = {1, -1, 0, 0};
 
-    public static Action mapActionIx(int ix)
-    {
-        return Action.values()[ix];
-    }
+    public class Node {
+        private int x, y;
+        private boolean visited = false;
+        private Node parent = null;
 
-    public class Node implements Comparable<Node>
-    {
-        public int x, y;
-
-        public Action action;
-
-        public Node(int x, int y)
-        {
+        public Node(int x, int y) {
             this.x = x;
             this.y = y;
-            this.action = Action.DO_NOTHING;
         }
 
-        public Node(int x, int y, Action action)
-        {
+        public Node(int x, int y, Node parent) {
             this(x, y);
-            this.action = action;
+            this.parent = parent;
         }
 
-        public int compareTo(Node other)
-        {
-            final var xCompare = Integer.compare(x, other.x);
-            final var yCompare = Integer.compare(y, other.y);
-
-            if (xCompare != 0) {
-                return xCompare;
-            } else if (yCompare != 0) {
-                return yCompare;
-            }
-
-            return 0;
+        public int getX() {
+            return this.x;
         }
 
-        @Override public boolean equals(Object o)
-        {
+        public int getY() {
+            return this.y;
+        }
+
+        public int compareTo(Node node) {
+            return Comparator.comparing(Node::getX).thenComparing(Node::getY).compare(this, node);
+        }
+
+        @Override
+        public boolean equals(Object o) {
             if (o == this)
                 return true;
             if (!(o instanceof Node)) {
                 return false;
             }
             Node node = (Node) o;
-            return Objects.equals(x, node.x) && Objects.equals(y, node.y);
+            return Objects.equals(this.x, node.x) && Objects.equals(this.y, node.y);
         }
 
-        @Override public int hashCode()
-        {
-            return Objects.hash(x, y);
-        }
-
-        public String toString()
-        {
-            return String.format("(%s, %s); %s", this.x, this.y, this.action);
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.x, this.y);
         }
     }
 
-    public PathFinder(Environment env, int rowPos, int colPos)
-    {
-        this.reachedTarget = false;
+    public PathFinder(Environment env, int rowPos, int colPos) {
+        this.complete = false;
 
         this.env = env;
         this.rowPos = rowPos;
         this.colPos = colPos;
 
-        this.startNode = new Node(this.rowPos, this.colPos);
+        this.actionMap = new HashMap<Node, Action>();
+        this.nodePath = new Stack<Node>();
+        this.allNodes = new HashMap<Node, Node>();
 
-        this.visitedTiles = new boolean[this.getRows()][this.getCols()];
-
-        this.pathMap = new HashMap<Node, Node>();
-        this.path = new ArrayList<Node>();
+        this.startNode = new Node(rowPos, colPos);
 
         for (int i = 0; i < this.getRows(); i++) {
             for (int j = 0; j < this.getCols(); j++) {
-                this.visitedTiles[i][j] = false;
-
-                final var status = this.env.getTileStatus(i, j);
-                if (status == TileStatus.TARGET) {
+                if (this.env.getTileStatus(i, j) == TileStatus.TARGET) {
                     this.endNode = new Node(i, j);
                 }
             }
         }
+
+        this.allNodes.put(startNode, startNode);
+        this.allNodes.put(endNode, endNode);
     }
 
-    public void reset()
-    {
-        for (int i = 0; i < this.getRows(); i++) {
-            for (int j = 0; j < this.getCols(); j++) {
-                this.visitedTiles[i][j] = false;
-            }
-        }
-        this.pathMap.clear();
-    }
-
-    public double manhattanDistance(Node n1, Node n2)
-    {
+    public double manhattanDistance(Node n1, Node n2) {
         return Math.abs(n1.x - n2.x) + Math.abs(n1.y - n2.y);
     }
 
-    public double heuristic(Node node)
-    {
+    public double heuristic(Node node) {
         if (this.endNode != null) {
             return manhattanDistance(node, this.endNode);
         } else {
@@ -140,23 +111,218 @@ public class PathFinder
         }
     }
 
-    public int getRows()
-    {
+    public int getRows() {
         return this.env.getRows();
     }
 
-    public int getCols()
-    {
+    public int getCols() {
         return this.env.getCols();
     }
 
-    public boolean isValid(int row, int col)
-    {
-        return this.env.validPos(row, col) && !this.visitedTiles[row][col];
+    public boolean isValid(Node node) {
+        return this.env.validPos(node.x, node.y);
     }
 
-    public void printPath()
-    {
+    public Node getOrPutNode(Node node) {
+        if (this.allNodes.containsKey(node)) {
+            return this.allNodes.get(node);
+        } else {
+            this.allNodes.put(node, node);
+            return node;
+        }
+    }
+
+    public boolean completed(Node node) {
+        return this.complete = this.env.getTileStatus(node.x, node.y) == TileStatus.TARGET;
+    }
+
+    public int getCost(Node node) {
+        return this.env.getTileCost(node.x, node.y);
+    }
+
+    public TileStatus getStatus(Node node) {
+        return this.env.getTileStatus(node.x, node.y);
+    }
+
+    public void getPath() {
+        var node = this.endNode;
+        this.nodePath.add(node);
+
+        while (node != null && !node.equals(this.startNode)) {
+            this.energyCost += this.getCost(node);
+            node = node.parent;
+            this.nodePath.add(node);
+        }
+    }
+
+    public ArrayList<Node> getChildren(Node node) {
+        final var neighbors = new ArrayList<Node>();
+
+        for (int i = 0; i < rowVector.length; i++) {
+            final var row = node.x + rowVector[i];
+            final var col = node.y + colVector[i];
+
+            if (this.env.validPos(row, col)) {
+                var child = new Node(row, col);
+                child = this.getOrPutNode(child);
+
+                if (!child.visited) {
+                    child.parent = node;
+                    child.visited = true;
+                    this.actionMap.put(child, Action.values()[i]);
+
+                    neighbors.add(child);
+                }
+            }
+        }
+
+        this.expanded += neighbors.size();
+        return neighbors;
+    }
+
+    public void DFS() {
+        final var nodes = new Stack<Node>();
+        nodes.add(this.startNode);
+
+        while (!nodes.isEmpty()) {
+            final var currentNode = nodes.pop();
+
+            if (this.completed(currentNode)) {
+                break;
+            } else {
+                final var children = this.getChildren(currentNode);
+
+                for (final var child : children) {
+                    nodes.add(child);
+                }
+            }
+        }
+    }
+
+    public void AStar() {
+        final var fMap = new HashMap<Node, Double>();
+        final var gMap = new HashMap<Node, Double>();
+
+        final var openSet = new PriorityQueue<Node>(Comparator.comparing(fMap::get));
+        final var closedSet = new HashSet<Node>();
+
+        fMap.put(this.startNode, heuristic(this.startNode));
+        gMap.put(this.startNode, 0.0);
+
+        openSet.add(this.startNode);
+
+        while (!openSet.isEmpty()) {
+            final var current = openSet.remove();
+            closedSet.add(current);
+
+            if (this.completed(current)) {
+                break;
+            }
+
+            final var neighbors = this.getChildren(current);
+            final var currentG = gMap.getOrDefault(current, Double.MAX_VALUE);
+
+            neighbors.stream().filter((node) -> !closedSet.contains(node)).forEach((node) -> {
+                final var cost = this.env.getTileCost(node.x, node.y);
+                final var nodeG = gMap.getOrDefault(node, Double.MAX_VALUE);
+
+                // TODO: euclid
+                final var tmpG = currentG + cost + manhattanDistance(current, node);
+
+                if (tmpG < nodeG) {
+                    final var f = tmpG + heuristic(node);
+
+                    gMap.put(node, tmpG);
+                    fMap.put(node, f);
+
+                    if (!openSet.contains(node)) {
+                        openSet.add(node);
+                    }
+                }
+            });
+        }
+    }
+
+    public void RBFS() {
+        final var fMap = new HashMap<Node, Double>();
+
+        final var openSet = new PriorityQueue<Node>(Comparator.comparing(fMap::get));
+        fMap.put(this.startNode, heuristic(this.startNode));
+
+        openSet.add(this.startNode);
+
+        while (!openSet.isEmpty()) {
+            final var current = openSet.remove();
+
+            if (this.completed(current)) {
+                break;
+            }
+            final var neighbors = this.getChildren(current);
+
+            neighbors.stream().forEach((node) -> {
+                final var cost = this.env.getTileCost(node.x, node.y);
+                final var f = heuristic(node) + cost;
+                fMap.put(node, f);
+
+                if (!openSet.contains(node)) {
+                    openSet.add(node);
+                }
+            });
+        }
+    }
+
+    public void HillClimbing() {
+        final var fMap = new HashMap<Node, Double>();
+
+        final var openSet = new PriorityQueue<Node>(Comparator.comparing(fMap::get));
+        fMap.put(this.startNode, 0.0);
+
+        openSet.add(this.startNode);
+
+        while (!openSet.isEmpty()) {
+            final var current = openSet.remove();
+
+            if (this.completed(current)) {
+                break;
+            }
+            final var neighbors = this.getChildren(current);
+
+            neighbors.stream().forEach((node) -> {
+                final var cost = this.env.getTileCost(node.x, node.y);
+                fMap.put(node, 1.0 * cost);
+
+                if (!openSet.contains(node)) {
+                    openSet.add(node);
+                }
+            });
+        }
+    }
+
+    public void search(String searchAlgorithm) {
+        switch (searchAlgorithm) {
+            case "DFS":
+                this.DFS();
+                break;
+            case "AStar":
+                this.AStar();
+                break;
+            case "RBFS":
+                this.RBFS();
+                break;
+            case "HillClimbing":
+                this.HillClimbing();
+                break;
+            default:
+                break;
+        }
+
+        if (this.complete) {
+            this.getPath();
+            this.printPath();
+        }
+    }
+
+    public void printPath() {
         for (int i = 0; i < this.getRows(); i++) {
             final var row = new StringBuilder();
 
@@ -164,14 +330,13 @@ public class PathFinder
                 if (j > 0) {
                     row.append(" ");
                 }
-
                 final var node = new Node(i, j);
-                final var status = this.env.getTileStatus(i, j);
+                final var status = this.getStatus(node);
 
-                if (this.path.contains(node)) {
+                if (this.nodePath.contains(node)) {
                     if (status == TileStatus.TARGET) {
                         row.append("G");
-                    } else if (this.path.get(0).equals(node)) {
+                    } else if (this.nodePath.peek().equals(node)) {
                         row.append("S");
                     } else {
                         row.append("*");
@@ -199,256 +364,6 @@ public class PathFinder
                 }
             }
             System.out.println(row);
-        }
-    }
-
-    public void getPath()
-    {
-        var node = this.endNode;
-
-        this.path.add(this.endNode);
-
-        while (node != null && !node.equals(this.startNode)) {
-            this.energyCost += this.env.getTileCost(node.x, node.y);
-            node = this.pathMap.get(node);
-            this.path.add(node);
-        }
-        Collections.reverse(this.path);
-    }
-
-    public ArrayList<Node> getNeighbors(Node node)
-    {
-        int baseRow = node.x;
-        int baseCol = node.y;
-
-        final var neighbors = new ArrayList<Node>();
-
-        for (int i = 0; i < rowVector.length; i++) {
-            final var row = baseRow + rowVector[i];
-            final var col = baseCol + colVector[i];
-
-            if (this.isValid(row, col)) {
-                final var child = new Node(row, col);
-                child.action = mapActionIx(i);
-
-                this.visitedTiles[row][col] = true;
-                neighbors.add(child);
-            }
-        }
-
-        this.expanded += neighbors.size();
-
-        return neighbors;
-    }
-
-    public boolean finishSearch(Node node)
-    {
-        if (this.env.getTileStatus(node.x, node.y) == TileStatus.TARGET) {
-            this.endNode = node;
-            this.reachedTarget = true;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public void DFS()
-    {
-        final var rowStack = new ArrayDeque<Integer>();
-        final var colStack = new ArrayDeque<Integer>();
-
-        rowStack.add(this.rowPos);
-        colStack.add(this.colPos);
-
-        while (!rowStack.isEmpty()) {
-            final var row = rowStack.removeFirst();
-            final var col = colStack.removeFirst();
-            final var current = new Node(row, col);
-
-            if (this.finishSearch(current)) {
-                break;
-            }
-
-            final var neighbors = this.getNeighbors(current);
-
-            neighbors.forEach((node) -> {
-                rowStack.addFirst(node.x);
-                colStack.addFirst(node.y);
-
-                pathMap.put(node, new Node(current.x, current.y, node.action));
-            });
-        }
-    }
-
-    public void BFS()
-    {
-        final var rowQueue = new ArrayDeque<Integer>();
-        final var colQueue = new ArrayDeque<Integer>();
-
-        rowQueue.add(this.rowPos);
-        colQueue.add(this.colPos);
-
-        while (!rowQueue.isEmpty()) {
-            final var row = rowQueue.remove();
-            final var col = colQueue.remove();
-            final var current = new Node(row, col);
-
-            if (this.finishSearch(current)) {
-                break;
-            }
-
-            final var neighbors = this.getNeighbors(current);
-
-            neighbors.forEach((node) -> {
-                rowQueue.add(node.x);
-                colQueue.add(node.y);
-
-                pathMap.put(node, new Node(current.x, current.y, node.action));
-            });
-        }
-    }
-
-    public void AStar()
-    {
-        final var fMap = new HashMap<Node, Double>();
-        final var gMap = new HashMap<Node, Double>();
-
-        final var openSet =
-            new PriorityQueue<Node>(Comparator.comparing(fMap::get));
-        final var closedSet = new HashSet<Node>();
-
-        fMap.put(this.startNode, heuristic(this.startNode));
-        gMap.put(this.startNode, 0.0);
-
-        openSet.add(this.startNode);
-
-        while (!openSet.isEmpty()) {
-            final var current = openSet.remove();
-            closedSet.add(current);
-
-            if (this.finishSearch(current)) {
-                break;
-            }
-
-            final var neighbors = this.getNeighbors(current);
-            final var currentG = gMap.getOrDefault(current, Double.MAX_VALUE);
-
-            neighbors.stream()
-                .filter((node) -> !closedSet.contains(node))
-                .forEach((node) -> {
-                    final var cost = this.env.getTileCost(node.x, node.y);
-                    final var nodeG = gMap.getOrDefault(node, Double.MAX_VALUE);
-
-                    final var tmpG =
-                        currentG + cost + manhattanDistance(current, node);
-
-                    if (tmpG < nodeG) {
-                        final var f = tmpG + heuristic(node);
-
-                        gMap.put(node, tmpG);
-                        fMap.put(node, f);
-
-                        pathMap.put(
-                            node, new Node(current.x, current.y, node.action));
-
-                        if (!openSet.contains(node)) {
-                            openSet.add(node);
-                        }
-                    }
-                });
-        }
-    }
-
-    public void RBFS()
-    {
-        final var fMap = new HashMap<Node, Double>();
-
-        final var openSet =
-            new PriorityQueue<Node>(Comparator.comparing(fMap::get));
-        fMap.put(this.startNode, heuristic(this.startNode));
-
-        openSet.add(this.startNode);
-
-        while (!openSet.isEmpty()) {
-            final var current = openSet.remove();
-
-            if (this.finishSearch(current)) {
-                break;
-            }
-            final var neighbors = this.getNeighbors(current);
-
-            neighbors.stream().forEach((node) -> {
-                final var cost = this.env.getTileCost(node.x, node.y);
-                final var f = heuristic(node) + cost;
-                fMap.put(node, f);
-
-                pathMap.put(node, new Node(current.x, current.y, node.action));
-
-                if (!openSet.contains(node)) {
-                    openSet.add(node);
-                }
-            });
-        }
-    }
-
-    public void HillClimbing()
-    {
-        final var fMap = new HashMap<Node, Double>();
-
-        final var openSet =
-            new PriorityQueue<Node>(Comparator.comparing(fMap::get));
-        fMap.put(this.startNode, 0.0);
-
-        openSet.add(this.startNode);
-
-        while (!openSet.isEmpty()) {
-            final var current = openSet.remove();
-
-            if (this.finishSearch(current)) {
-                break;
-            }
-            final var neighbors = this.getNeighbors(current);
-
-            neighbors.stream().forEach((node) -> {
-                final var cost = this.env.getTileCost(node.x, node.y);
-                fMap.put(node, 1.0 * cost);
-                pathMap.put(node, new Node(current.x, current.y, node.action));
-
-                if (!openSet.contains(node)) {
-                    openSet.add(node);
-                }
-            });
-        }
-    }
-
-    public ArrayList<Node> search(String searchAlgorithm)
-    {
-        switch (searchAlgorithm) {
-            case "BFS":
-                this.BFS();
-                break;
-            case "DFS":
-                this.DFS();
-                break;
-            case "AStar":
-                this.AStar();
-                break;
-            case "RBFS":
-                this.RBFS();
-                break;
-            case "HillClimbing":
-                this.HillClimbing();
-                break;
-            default:
-                break;
-        }
-
-        if (this.reachedTarget) {
-            this.getPath();
-            // this.printPath();
-            return this.path;
-        } else {
-            return null;
         }
     }
 }

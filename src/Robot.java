@@ -11,30 +11,22 @@
    env.getTargetCol()
 */
 
-public class Robot
-{
+public class Robot {
     private Environment env;
     private int posRow;
     private int posCol;
     private String searchAlgorithm;
 
     public int expanded = 0;
-    public int timeStep = 0;
 
     public PathFinder pathfinder;
     /**
         Initializes a Robot on a specific tile in the environment.
     */
-    public Robot(Environment env)
-    {
+    public Robot(Environment env) {
         this(env, 0, 0, "");
     }
-    public Robot(
-        Environment env,
-        int posRow,
-        int posCol,
-        String searchAlgorithm)
-    {
+    public Robot(Environment env, int posRow, int posCol, String searchAlgorithm) {
         this.env = env;
         this.posRow = posRow;
         this.posCol = posCol;
@@ -42,36 +34,29 @@ public class Robot
 
         this.pathfinder = new PathFinder(this.env, this.posRow, this.posCol);
     }
-    public int getPosRow()
-    {
+    public int getPosRow() {
         return posRow;
     }
-    public int getPosCol()
-    {
+    public int getPosCol() {
         return posCol;
     }
-    public void incPosRow()
-    {
+    public void incPosRow() {
         posRow++;
     }
-    public void decPosRow()
-    {
+    public void decPosRow() {
         posRow--;
     }
-    public void incPosCol()
-    {
+    public void incPosCol() {
         posCol++;
     }
-    public void decPosCol()
-    {
+    public void decPosCol() {
         posCol--;
     }
 
     /**
      * Construct search tree before Robot start moving.
      */
-    public void plan()
-    {
+    public void plan() {
         this.pathfinder.search(searchAlgorithm);
         this.expanded = this.pathfinder.expanded;
     }
@@ -81,13 +66,12 @@ public class Robot
         At each time-step, the Robot decides which direction
         to move.
     */
-    public Action getAction()
-    {
+    public Action getAction() {
         var action = Action.DO_NOTHING;
 
-        if (!this.pathfinder.path.isEmpty()) {
-            action = this.pathfinder.path.get(this.timeStep).action;
-            this.timeStep += 1;
+        if (!this.pathfinder.nodePath.isEmpty()) {
+            final var node = this.pathfinder.nodePath.pop();
+            action = this.pathfinder.actionMap.get(node);
         }
 
         return action;
