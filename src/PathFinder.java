@@ -242,58 +242,30 @@ public class PathFinder {
     }
 
     public void RBFS() {
-        final var fMap = new HashMap<Node, Double>();
+        final var nodes = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
+        this.startNode.f = heuristic(startNode);
+        nodes.add(startNode);
 
-        final var openSet = new PriorityQueue<Node>(Comparator.comparing(fMap::get));
-        fMap.put(this.startNode, heuristic(this.startNode));
-
-        openSet.add(this.startNode);
-
-        while (!openSet.isEmpty()) {
-            final var currentNode = openSet.remove();
-
-            if (this.completed(currentNode)) {
-                break;
-            }
-            final var neighbors = this.getChildren(currentNode);
-
-            neighbors.stream().forEach((node) -> {
-                final var cost = this.env.getTileCost(node.x, node.y);
-                final var f = heuristic(node) + cost;
-                fMap.put(node, f);
-
-                if (!openSet.contains(node)) {
-                    openSet.add(node);
-                }
-            });
-        }
+        RBFSDriver(nodes);
     }
 
-    public void HillClimbing() {
-        final var fMap = new HashMap<Node, Double>();
+    public void RBFSDriver(PriorityQueue<Node> nodes) {
+        final var node = nodes.remove();
 
-        final var openSet = new PriorityQueue<Node>(Comparator.comparing(fMap::get));
-        fMap.put(this.startNode, 0.0);
-
-        openSet.add(this.startNode);
-
-        while (!openSet.isEmpty()) {
-            final var currentNode = openSet.remove();
-
-            if (this.completed(currentNode)) {
-                break;
-            }
-            final var neighbors = this.getChildren(currentNode);
-
-            neighbors.stream().forEach((node) -> {
-                final var cost = this.env.getTileCost(node.x, node.y);
-                fMap.put(node, 1.0 * cost);
-
-                if (!openSet.contains(node)) {
-                    openSet.add(node);
-                }
-            });
+        if (this.completed(node)) {
+            return;
         }
+        final var children = this.getChildren(node);
+
+        for (final Node child : children) {
+            child.f = heuristic(child) + getCost(child);
+
+            if (!nodes.contains(child)) {
+                nodes.add(child);
+            }
+        };
+
+        RBFSDriver(nodes);
     }
 
     public void search(String searchAlgorithm) {
@@ -308,7 +280,6 @@ public class PathFinder {
                 this.RBFS();
                 break;
             case "HillClimbing":
-                this.HillClimbing();
                 break;
             default:
                 break;
