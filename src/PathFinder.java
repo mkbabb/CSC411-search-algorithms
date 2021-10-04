@@ -35,6 +35,9 @@ public class PathFinder {
         private boolean visited = false;
         private Node parent = null;
 
+        public double f = 0;
+        public double g = Double.MAX_VALUE;
+
         public Node(int x, int y) {
             this.x = x;
             this.y = y;
@@ -51,6 +54,10 @@ public class PathFinder {
 
         public int getY() {
             return this.y;
+        }
+
+        public double getF() {
+            return this.f;
         }
 
         public int compareTo(Node node) {
@@ -99,13 +106,13 @@ public class PathFinder {
         this.allNodes.put(endNode, endNode);
     }
 
-    public double manhattanDistance(Node n1, Node n2) {
-        return Math.abs(n1.x - n2.x) + Math.abs(n1.y - n2.y);
+    public double euclideanDistance(Node n1, Node n2) {
+        return Math.sqrt(Math.pow(n1.x - n2.x, 2) + Math.pow(n1.y - n2.y, 2));
     }
 
     public double heuristic(Node node) {
         if (this.endNode != null) {
-            return manhattanDistance(node, this.endNode);
+            return euclideanDistance(node, this.endNode);
         } else {
             return 1000;
         }
@@ -189,57 +196,48 @@ public class PathFinder {
 
             if (this.completed(currentNode)) {
                 break;
-            } else {
-                final var children = this.getChildren(currentNode);
+            }
 
-                for (final var child : children) {
-                    nodes.add(child);
-                }
+            final var children = this.getChildren(currentNode);
+            for (final var child : children) {
+                nodes.add(child);
             }
         }
     }
 
     public void AStar() {
-        final var fMap = new HashMap<Node, Double>();
-        final var gMap = new HashMap<Node, Double>();
-
-        final var openSet = new PriorityQueue<Node>(Comparator.comparing(fMap::get));
+        final var openSet = new PriorityQueue<Node>(Comparator.comparing(Node::getF));
         final var closedSet = new HashSet<Node>();
 
-        fMap.put(this.startNode, heuristic(this.startNode));
-        gMap.put(this.startNode, 0.0);
+        this.startNode.f = heuristic(this.startNode);
+        this.startNode.g = 0.0;
 
         openSet.add(this.startNode);
 
         while (!openSet.isEmpty()) {
-            final var current = openSet.remove();
-            closedSet.add(current);
+            final var currentNode = openSet.remove();
+            closedSet.add(currentNode);
 
-            if (this.completed(current)) {
+            if (this.completed(currentNode)) {
                 break;
             }
 
-            final var neighbors = this.getChildren(current);
-            final var currentG = gMap.getOrDefault(current, Double.MAX_VALUE);
+            final var children = this.getChildren(currentNode);
+            for (final var child : children) {
+                if (!closedSet.contains(child)) {
+                    final var testingGValue =
+                        currentNode.g + this.getCost(child) + euclideanDistance(currentNode, child);
 
-            neighbors.stream().filter((node) -> !closedSet.contains(node)).forEach((node) -> {
-                final var cost = this.env.getTileCost(node.x, node.y);
-                final var nodeG = gMap.getOrDefault(node, Double.MAX_VALUE);
+                    if (testingGValue < child.g) {
+                        child.g = testingGValue;
+                        child.f = testingGValue + heuristic(child);
 
-                // TODO: euclid
-                final var tmpG = currentG + cost + manhattanDistance(current, node);
-
-                if (tmpG < nodeG) {
-                    final var f = tmpG + heuristic(node);
-
-                    gMap.put(node, tmpG);
-                    fMap.put(node, f);
-
-                    if (!openSet.contains(node)) {
-                        openSet.add(node);
+                        if (!openSet.contains(child)) {
+                            openSet.add(child);
+                        }
                     }
                 }
-            });
+            }
         }
     }
 
@@ -252,12 +250,12 @@ public class PathFinder {
         openSet.add(this.startNode);
 
         while (!openSet.isEmpty()) {
-            final var current = openSet.remove();
+            final var currentNode = openSet.remove();
 
-            if (this.completed(current)) {
+            if (this.completed(currentNode)) {
                 break;
             }
-            final var neighbors = this.getChildren(current);
+            final var neighbors = this.getChildren(currentNode);
 
             neighbors.stream().forEach((node) -> {
                 final var cost = this.env.getTileCost(node.x, node.y);
@@ -280,12 +278,12 @@ public class PathFinder {
         openSet.add(this.startNode);
 
         while (!openSet.isEmpty()) {
-            final var current = openSet.remove();
+            final var currentNode = openSet.remove();
 
-            if (this.completed(current)) {
+            if (this.completed(currentNode)) {
                 break;
             }
-            final var neighbors = this.getChildren(current);
+            final var neighbors = this.getChildren(currentNode);
 
             neighbors.stream().forEach((node) -> {
                 final var cost = this.env.getTileCost(node.x, node.y);
