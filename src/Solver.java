@@ -22,7 +22,7 @@ public class Solver {
     public int expanded = 0;
 
     public static int[] rv = {0, 0, -1, 1};
-    public static int[] rc = {1, -1, 0, 0};
+    public static int[] cv = {1, -1, 0, 0};
 
     public Solver(Environment env, int posRow, int posCol) {
         this.complete = false;
@@ -98,18 +98,19 @@ public class Solver {
 
         for (int i = 0; i < rv.length; i++) {
             final var row = node.x + rv[i];
-            final var col = node.y + rc[i];
+            final var col = node.y + cv[i];
 
             if (this.env.validPos(row, col)) {
                 var child = new Node(row, col);
                 child = this.getOrPutNode(child);
 
-                this.actionMap.put(child, Action.values()[i]);
-
                 if (!child.visited) {
+                    final var action = Action.values()[i];
+                    this.actionMap.put(node, action);
+                    this.actionMap.put(child, action);
+
                     child.parent = node;
                     child.visited = true;
-
                     neighbors.add(child);
                 }
             }
@@ -168,7 +169,7 @@ public class Solver {
     public Action getAction() {
         if (!this.nodePath.isEmpty()) {
             final var node = this.nodePath.pop();
-            return this.actionMap.get(node);
+            return this.actionMap.getOrDefault(node, Action.DO_NOTHING);
         } else {
             return Action.DO_NOTHING;
         }

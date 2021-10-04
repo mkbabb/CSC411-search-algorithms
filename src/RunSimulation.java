@@ -87,23 +87,19 @@ public class RunSimulation {
     }
 
     public static void main(String[] args) {
-        // String searchAlgorithm = args[0];
-        // int start_row = Integer.parseInt(args[1]);
-        // int start_col = Integer.parseInt(args[2]);
+        String searchAlgorithm = args[0];
+        int start_row = Integer.parseInt(args[1]);
+        int start_col = Integer.parseInt(args[2]);
 
-        // int target_row = Integer.parseInt(args[3]);
-        // int target_col = Integer.parseInt(args[4]);
+        int target_row = Integer.parseInt(args[3]);
+        int target_col = Integer.parseInt(args[4]);
 
-        // String env_id = args[5];
+        String env_id = args[5];
 
-        // RunSimulation sim = new RunSimulation(
-        //     searchAlgorithm,
-        //     start_row,
-        //     start_col,
-        //     target_row,
-        //     target_col,
-        //     env_id);
-        // sim.run();
+        RunSimulation sim =
+            new RunSimulation(searchAlgorithm, start_row, start_col, target_row, target_col, env_id);
+
+        sim.run();
         test();
     }
 
@@ -117,11 +113,7 @@ public class RunSimulation {
         final var cols = 10;
         final var r = new Random();
 
-        int start_row = r.nextInt(rows);
-        int start_col = r.nextInt(cols);
-
-        int target_row = r.nextInt(rows);
-        int target_col = r.nextInt(cols);
+        boolean completelyPassed = true;
 
         for (final var searchAlgorithm : searchAlgorithms) {
             System.out.println();
@@ -134,6 +126,12 @@ public class RunSimulation {
             var allDone = true;
 
             for (int i = 0; i < trials; i++) {
+                int start_row = r.nextInt(rows);
+                int start_col = r.nextInt(cols);
+
+                int target_row = r.nextInt(rows);
+                int target_col = r.nextInt(cols);
+                
                 for (final var env : envs) {
                     RunSimulation sim =
                         new RunSimulation(searchAlgorithm, start_row, start_col, target_row, target_col, env);
@@ -150,6 +148,7 @@ public class RunSimulation {
                     avgExpanded += expanded;
                     avgEnergyCost += energyCost;
                     allDone &= completed;
+                    completelyPassed &= completed;
                 }
             }
 
@@ -166,5 +165,8 @@ public class RunSimulation {
                 avgTimeSteps, avgExpanded, avgEnergyCost, allDone));
             System.out.println("*********");
         }
+
+        System.out.println();
+        System.out.println(String.format("Completely passed: %s", completelyPassed));
     }
 }
