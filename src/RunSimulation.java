@@ -121,7 +121,7 @@ public class RunSimulation
 
     public static void test()
     {
-        String[] searchAlgorithms = {"DFS", "AStar", "RBFS", "HillClimbing"};
+        String[] searchAlgorithms = {"DFS", "AStar", "RBFS", "HillClimbing", "BFS"};
         int trials = 10000;
 
         String[] envs = {null, "1", "2"};

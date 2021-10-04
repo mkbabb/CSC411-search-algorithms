@@ -166,12 +166,17 @@ public class PathFinder
                 }
 
                 final var node = new Node(i, j);
+                final var status = this.env.getTileStatus(i, j);
 
                 if (this.path.contains(node)) {
-                    row.append("*");
+                    if (status == TileStatus.TARGET) {
+                        row.append("G");
+                    } else if (this.path.get(0).equals(node)) {
+                        row.append("S");
+                    } else {
+                        row.append("*");
+                    }
                 } else {
-                    final var status = this.env.getTileStatus(i, j);
-
                     switch (status) {
                         case IMPASSABLE:
                             row.append("x");
